@@ -1,0 +1,37 @@
+{
+  "name": "2026-10-29",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview --host 127.0.0.1",
+    "test": "node --test",
+    "check": "npm test && npm run build",
+    "publish:pages": "node scripts/publish-pages.js",
+    "deploy": "npm run check && npm run publish:source && npm run publish:pages",
+    "publish:source": "node scripts/publish-source.js"
+  },
+  "dependencies": {
+    "@strudel/core": "1.1.0",
+    "@strudel/mini": "1.1.0",
+    "@strudel/soundfonts": "1.1.0",
+    "@tiptap/core": "^3.31.3",
+    "@tiptap/extension-highlight": "^3.31.3",
+    "@tiptap/extension-subscript": "^3.31.3",
+    "@tiptap/extension-superscript": "^3.31.3",
+    "@tiptap/extension-text-align": "^3.31.3",
+    "@tiptap/pm": "^3.31.3",
+    "@tiptap/starter-kit": "^3.31.3",
+    "box3d-wasm": "0.2.0",
+    "manifold-3d": "3.5.4",
+    "three": "0.185.1"
+  },
+  "devDependencies": {
+    "vite": "8.1.3"
+  }
+}

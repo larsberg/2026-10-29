@@ -1,0 +1,17 @@
+node_modules/
+dist/
+.DS_Store
+.env
+.env.*
+!.env.example
+/data/setup.json
+/data/.setup-*.tmp
+/public/.setup-*.tmp
+reports/
+ignoreMe/
+/*.mp4
+/*.webm
+/*.mov
+__pycache__/
+*.pyc
+

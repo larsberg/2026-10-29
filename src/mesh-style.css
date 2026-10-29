@@ -1,0 +1,22 @@
+/* The controls use the reference sketch’s shared style.css. */
+.scene-canvas { cursor: grab; }
+.mesh-stats { color: #747474; font-size: 10px; font-variant-numeric: tabular-nums; margin-top: 16px; }
+[hidden] { display: none !important; }
+.field-vector { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-bottom: 14px; }
+.field-vector label { display: grid; gap: 4px; color: #747474; font-size: 10px; }
+.field-vector input { width: 100%; min-width: 0; padding: 7px; border: 1px solid #d5d5d5; background: #ffffffb3; font: inherit; font-size: 12px; color: #303030; }
+.field-select { display: grid; gap: 6px; margin: 12px 0; }
+.field-select select { width: 100%; padding: 7px; font: inherit; }
+.studio-palette-controls { display: grid; grid-template-columns: 34px minmax(0, 1fr) 34px; gap: 6px; }
+.studio-palette-controls button { min-height: 34px; padding: 4px; }
+.field-actions { display: flex; gap: 8px; }
+.contact-audio-readout { display: block; margin: 12px 0; color: #747474; font-size: 11px; line-height: 1.5; }
+.audio-level-label { display: flex; align-items: center; gap: 10px; margin: 10px 0; font-size: 11px; color: #747474; }
+.audio-output-level { flex: 1; min-width: 0; height: 10px; }
+.audio-field textarea { width: 100%; min-width: 0; resize: vertical; padding: 7px; border: 1px solid #d5d5d5; background: #ffffffb3; font: inherit; color: #303030; }
+.audio-motion-mapping { margin-top: 16px; border-top: 1px solid #d5d5d5; }
+.audio-motion-readout { display: block; margin: 10px 0; color: #747474; font-size: 11px; font-variant-numeric: tabular-nums; }
+.sketch:not(.controls-visible) .frame-rate-meter { display: none; }
+.recording-badge { position: absolute; z-index: 5; left: 16px; bottom: max(16px, env(safe-area-inset-bottom)); display: flex; align-items: center; flex-wrap: wrap; gap: 10px; max-width: calc(100% - 32px); padding: 8px 12px; background: #101820e8; color: white; font-size: 12px; border-radius: 6px; }
+.recording-badge a { color: white; text-decoration: underline; }
+.recording-badge button { min-height: 30px; padding: 4px 10px; }

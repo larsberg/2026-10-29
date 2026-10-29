@@ -1,0 +1,62 @@
+{
+  "id": "2026-10-29",
+  "title": "2026-10-29",
+  "created": "2026-10-29",
+  "entry": "./",
+  "protocol": "sketch-player:v1",
+  "capabilities": [
+    "play",
+    "pause",
+    "reset",
+    "get-setup",
+    "setup",
+    "save-setup",
+    "load-setup"
+  ],
+  "sound": "none",
+  "description": "A new sketch with Box3D physics, Strudel audio tools, and the shared studio controls.",
+  "schemaVersion": 1,
+  "date": "2026-10-29",
+  "datePrecision": "day",
+  "author": "Lars Berg",
+  "tags": [
+    "threejs",
+    "physics",
+    "strudel",
+    "interactive"
+  ],
+  "madeWith": [
+    "threejs",
+    "box3d",
+    "strudel",
+    "web-audio"
+  ],
+  "audio": "none",
+  "thumbnail": {
+    "src": "./thumbnail.png",
+    "width": 1200,
+    "height": 900,
+    "alt": "2026-10-29 sketch placeholder"
+  },
+  "embed": {
+    "src": "./?embed=1",
+    "allow": [
+      "autoplay",
+      "fullscreen"
+    ],
+    "resize": "container",
+    "controls": [
+      "play",
+      "pause",
+      "reset",
+      "get-setup",
+      "setup",
+      "save-setup",
+      "load-setup"
+    ],
+    "protocol": "sketch-player:v1",
+    "parentOriginParameter": "parentOrigin"
+  },
+  "repository": "https://github.com/larsberg/2026-10-29",
+  "url": "https://larsberg.github.io/2026-10-29/"
+}

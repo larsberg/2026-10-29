@@ -1,0 +1,303 @@
+{
+  "version": 1,
+  "sketch": "2026-10-29",
+  "materials": {
+    "mesh": {
+      "metalness": 0.48,
+      "roughness": 0.48,
+      "emissiveIntensity": 0,
+      "envMapIntensity": 1,
+      "opacity": 1,
+      "color": "#ffffff",
+      "emissive": "#ffffff",
+      "wireframe": false,
+      "flatShading": true,
+      "normalMix": 0
+    },
+    "text": {
+      "metalness": 0,
+      "roughness": 1,
+      "emissiveIntensity": 0,
+      "envMapIntensity": 0,
+      "opacity": 1,
+      "color": "#000000",
+      "emissive": "#ffffff",
+      "wireframe": false,
+      "flatShading": false
+    }
+  },
+  "lighting": {
+    "spotlight": {
+      "enabled": true,
+      "color": "#ffdbb4",
+      "intensity": 600,
+      "offsetX": -3,
+      "height": 13.1,
+      "offsetZ": 4,
+      "angle": 50,
+      "penumbra": 0.5,
+      "castShadow": true,
+      "softness": 3,
+      "shadowBias": -0.0001,
+      "normalBias": 0.025
+    },
+    "directional": {
+      "enabled": false,
+      "color": "#ffdbb4",
+      "intensity": 2.6,
+      "offsetX": -3,
+      "height": 7,
+      "offsetZ": 4,
+      "castShadow": false,
+      "softness": 3,
+      "shadowBias": -0.0003,
+      "normalBias": 0.025
+    },
+    "hemisphere": {
+      "enabled": false,
+      "skyColor": "#80ddd9",
+      "groundColor": "#4e302b",
+      "intensity": 0.29,
+      "yaw": 0,
+      "tilt": 0
+    },
+    "environment": {
+      "enabled": true,
+      "intensity": 1,
+      "rotation": 0,
+      "backgroundColor": "#101c20",
+      "keyColor": "#ff914e",
+      "stripColor": "#fff0d6",
+      "fillColor": "#087f8c",
+      "rimColor": "#51d4cc",
+      "accentColor": "#d3584b",
+      "bounceColor": "#e1ac69",
+      "backColor": "#4c6f78"
+    },
+    "occlusion": {
+      "enabled": true,
+      "intensity": 1.67,
+      "radius": 1.08,
+      "aoOnly": false
+    }
+  },
+  "info": {
+    "upperLeft": {
+      "type": "doc",
+      "content": [
+        {
+          "type": "heading",
+          "attrs": {
+            "textAlign": "left",
+            "level": 1
+          },
+          "content": [
+            {
+              "type": "text",
+              "text": "2026-10-29"
+            }
+          ]
+        }
+      ]
+    },
+    "upperRight": {
+      "type": "doc",
+      "content": [
+        {
+          "type": "paragraph",
+          "attrs": {
+            "textAlign": "right"
+          },
+          "content": [
+            {
+              "type": "text",
+              "text": "Drag to orbit · scroll to zoom."
+            }
+          ]
+        }
+      ]
+    },
+    "lowerLeft": {
+      "type": "doc",
+      "content": [
+        {
+          "type": "paragraph",
+          "attrs": {
+            "textAlign": "left"
+          },
+          "content": [
+            {
+              "type": "text",
+              "text": "Lars Berg"
+            }
+          ]
+        }
+      ]
+    },
+    "lowerRight": {
+      "type": "doc",
+      "content": [
+        {
+          "type": "paragraph",
+          "attrs": {
+            "textAlign": "right"
+          },
+          "content": [
+            {
+              "type": "text",
+              "text": "Three.js · Box3D · Strudel"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "boxes": {
+    "spread": 2
+  },
+  "pipeline": {
+    "enabled": true,
+    "seed": 450725,
+    "triangulateEnabled": true,
+    "initialDiamondDualEnabled": true,
+    "faceCenterDualEnabled": false,
+    "averageVerticesEnabled": false,
+    "insetEnabled": false,
+    "insetScale": 0.5,
+    "excludeInitialBorderTriangles": true,
+    "subdivisionEnabled": false,
+    "subdivisionIterations": 1,
+    "diamondDualEnabled": false,
+    "hexelateTriangulateEnabled": true,
+    "hexelateEnabled": true,
+    "finalAverageVerticesEnabled": true,
+    "smoothingIterations": 4,
+    "smoothingStrength": 0.5
+  },
+  "rigidBody": {
+    "gravity": 0,
+    "friction": 0
+  },
+  "audio": {
+    "enabled": false,
+    "bpm": 120,
+    "volume": 0.6,
+    "drums": 0.42,
+    "bass": 0.86,
+    "keys": 0.7,
+    "melody": 0.64,
+    "instruments": {
+      "kick": {
+        "sound": "suuns-kick",
+        "level": 1.06,
+        "decay": 0.86,
+        "cutoff": 1000,
+        "resonance": 0.45,
+        "drive": 0.16,
+        "reverb": 0,
+        "delay": 0,
+        "delayBeats": 0.5,
+        "feedback": 0.3
+      },
+      "snare": {
+        "sound": "original",
+        "level": 0.15,
+        "decay": 0.5,
+        "cutoff": 5500,
+        "resonance": 0.45,
+        "drive": 0,
+        "reverb": 0.06,
+        "delay": 0,
+        "delayBeats": 0.5,
+        "feedback": 0.3
+      },
+      "hat": {
+        "sound": "closed",
+        "level": 0.14,
+        "decay": 0.7,
+        "cutoff": 6500,
+        "resonance": 0.45,
+        "drive": 0,
+        "reverb": 0.03,
+        "delay": 0,
+        "delayBeats": 0.5,
+        "feedback": 0.3
+      },
+      "bass": {
+        "sound": "raw-bass",
+        "level": 0.9,
+        "decay": 1,
+        "cutoff": 1250,
+        "resonance": 0.45,
+        "drive": 0.08,
+        "reverb": 0,
+        "delay": 0,
+        "delayBeats": 0.5,
+        "feedback": 0.3
+      },
+      "keys": {
+        "sound": "raw-chord",
+        "level": 0.8,
+        "decay": 1,
+        "cutoff": 3800,
+        "resonance": 0.45,
+        "drive": 0.32,
+        "reverb": 0.1,
+        "delay": 0.055,
+        "delayBeats": 0.75,
+        "feedback": 0.19
+      },
+      "melody": {
+        "sound": "raw-glide",
+        "level": 0.8,
+        "decay": 1,
+        "cutoff": 5500,
+        "resonance": 0.45,
+        "drive": 0.1,
+        "reverb": 0.17,
+        "delay": 0.15,
+        "delayBeats": 0.75,
+        "feedback": 0.28
+      }
+    }
+  },
+  "appearance": {
+    "wireframeColor": "#ffffff"
+  },
+  "floor": {
+    "roughness": 0.02,
+    "depth": 0.004,
+    "tileSize": 4.6,
+    "color": "#ffffff"
+  },
+  "fog": {
+    "enabled": false,
+    "color": "#101c20",
+    "near": 10,
+    "far": 30
+  },
+  "infoLayout": {
+    "size": 3,
+    "column": -1,
+    "row": -1
+  },
+  "camera": {
+    "follow": true,
+    "optimizedTextures": false,
+    "followSmoothing": 0.45,
+    "yaw": 133.4237212776,
+    "elevation": -0.3083942665,
+    "distance": 22.8623419597,
+    "offsetX": 0,
+    "offsetY": 0,
+    "offsetZ": 0,
+    "fov": 42
+  },
+  "visibility": {
+    "surface": true,
+    "wireframe": true,
+    "colliders": true,
+    "fps": true,
+    "text": true
+  }
+}

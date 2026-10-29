@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
+    <meta
+      name="description"
+      content="A new sketch with Box3D physics and the shared studio controls."
+    />
+    <title>2026-10-29 — Lars Berg</title>
+    <link rel="icon" href="data:," />
+    <style>
+      html, body, #sketch-root { background: #000; }
+      #sketch-root { opacity: 1; transition: opacity 200ms ease-out; }
+      #sketch-root[aria-busy="true"] { opacity: 0; }
+      @media (prefers-reduced-motion: reduce) {
+        #sketch-root { transition: none; }
+      }
+    </style>
+  </head>
+  <body>
+    <main id="sketch-root" aria-busy="true" inert></main>
+    <script type="module" src="./src/main.js"></script>
+  </body>
+</html>
