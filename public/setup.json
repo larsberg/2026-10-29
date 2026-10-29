@@ -153,11 +153,11 @@
     }
   },
   "boxes": {
-    "spread": 2
+    "spread": 2.6
   },
   "pipeline": {
     "enabled": true,
-    "seed": 450725,
+    "seed": 732233,
     "triangulateEnabled": true,
     "initialDiamondDualEnabled": true,
     "faceCenterDualEnabled": false,
@@ -285,9 +285,9 @@
     "follow": true,
     "optimizedTextures": false,
     "followSmoothing": 0.45,
-    "yaw": 133.4237212776,
-    "elevation": -0.3083942665,
-    "distance": 22.8623419597,
+    "yaw": -117.456925671,
+    "elevation": -22.3716628158,
+    "distance": 34,
     "offsetX": 0,
     "offsetY": 0,
     "offsetZ": 0,
@@ -295,8 +295,8 @@
   },
   "visibility": {
     "surface": true,
-    "wireframe": true,
-    "colliders": true,
+    "wireframe": false,
+    "colliders": false,
     "fps": true,
     "text": true
   }

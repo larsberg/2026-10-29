@@ -2,9 +2,9 @@ import { Box3, BufferGeometry, Float32BufferAttribute, Vector3 } from 'three';
 import { ConvexHull } from 'three/addons/math/ConvexHull.js';
 import { createBoxMeshRegions } from './box-union.js';
 
-// Box3D 0.2 has a 255-half-edge limit. Forty vertices stay below it even
-// when every hull face is a triangle (6V - 12 half-edges).
-export const MAX_COLLIDER_VERTICES = 40;
+// Use a modest hull budget for mobile collision work. Thirteen vertices also
+// stay below Box3D 0.2's 255-half-edge limit (6V - 12 for triangular faces).
+export const MAX_COLLIDER_VERTICES = 13;
 
 // Keep all axis extremes, then distribute the remaining samples over the
 // region. The hull stays inside the full convex region, never expanding back

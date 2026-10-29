@@ -68,6 +68,9 @@ export function createMeshView(scene, sharedSurfaceMaterial, physics) {
       // Deformed bounds keep camera follow centered on the simulated surface.
       object.updateWorldMatrix(true, false); return object.localToWorld(bounds.getCenter(target));
     },
+    getBounds(target) {
+      object.updateWorldMatrix(true, false); return target.copy(bounds).applyMatrix4(object.matrixWorld);
+    },
     get surface() { return surface; },
     get rig() { return rig; },
     get topology() { return topology; },
@@ -75,16 +78,16 @@ export function createMeshView(scene, sharedSurfaceMaterial, physics) {
     get generation() { return generation; },
     get layers() { return layers; },
     get canUndo() { return history.length > 0; },
-    setMesh(mesh, settings = configured, source) {
+    setMesh(mesh, settings = configured, source, preparedLayers) {
       validatePolygonMesh(mesh);
       const previous = base, previousSource = bindingSource;
       base = structuredClone(mesh); bindingSource = source;
-      try { return this.regenerate(undefined, settings); }
+      try { return this.regenerate(undefined, settings, preparedLayers); }
       catch (error) { base = previous; bindingSource = previousSource; throw error; }
     },
-    regenerate(camera, settings = configured) {
+    regenerate(camera, settings = configured, preparedLayers) {
       if (!base) return;
-      const next = createMeshLayers(base, settings?.pipeline ?? { enabled: false });
+      const next = preparedLayers ?? createMeshLayers(base, settings?.pipeline ?? { enabled: false });
       configured = settings;
       install(next.mesh); layers = { stages: next.stages };
       history.length = 0; generation++;

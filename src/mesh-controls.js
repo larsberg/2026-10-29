@@ -45,7 +45,7 @@ export function meshControlsMarkup() {
         <fieldset class="panel-body">
           <section id="panel-mesh" role="tabpanel" aria-labelledby="tab-mesh">
             <p class="control-heading">Box union</p>
-            <p class="camera-hint">Seven random boxes form a CSG surface. Each original box is a collider driving one bone in the processed mesh. New variation generates another group; Save retains its seed.</p>
+            <p class="camera-hint">Three nearby copies of a CSG sculpture made from seven random boxes. Each has its own bones and fitted colliders. New variation updates all three; Save retains the seed.</p>
             <div class="camera-controls">${fieldMarkup('pipeline', meshFields.pipeline.find(([key]) => key === 'seed'))}</div>
             ${fields('boxes')}
             <button type="button" data-mesh-action="randomize">New variation</button>
@@ -63,11 +63,11 @@ export function meshControlsMarkup() {
               <p class="face-sides camera-hint"></p>
             </details>
             <p class="control-heading">Physics</p>
-            <p class="camera-hint">Drag a box to grab and pull it; release to let go. Spring joints connect boxes that overlap in the generated layout; separated boxes have no connecting constraint. Gravity at zero leaves them floating. Pause stops simulation; Reset restores the original pose.</p>
+            <p class="camera-hint">Drag the surface to grab and pull a fitted collider; release to let go. Spring joints connect source boxes that overlap in the generated layout. Detached pieces move freely and collide with the other clusters. Gravity at zero leaves them floating. Pause stops simulation; Reset restores the original pose.</p>
             ${fieldMarkup('visibility', meshFields.visibility.find(([key]) => key === 'colliders'))}
             ${fields('rigidBody')}
             <p class="control-heading">Mesh operations</p>
-            <p class="camera-hint">Operations affect the whole mesh. Drag empty space to orbit.</p>
+            <p class="camera-hint">Operations affect all three sculptures. Drag a sculpture to grab it; drag empty space to orbit.</p>
             <div class="field-actions"><button type="button" data-mesh-action="triangulate">Triangulate faces</button><button type="button" data-mesh-action="smooth">Smooth mesh</button><button type="button" data-mesh-action="undo" disabled>Undo</button></div>
             <p class="control-heading">Dual mesh</p>
             <div class="field-actions"><button type="button" data-mesh-action="dualDiamond">Dialate / Diamond</button><button type="button" data-mesh-action="hexelate">Hexelate</button></div>

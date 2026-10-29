@@ -3,7 +3,7 @@ import { fitBoxColliders, MAX_COLLIDER_VERTICES } from './collider-fit.js';
 
 // Connect each overlapping cluster with a sparse tree, preferring its largest
 // shared regions. Separate clusters and isolated boxes get no connecting joint.
-export function boxConnections({ boxes, overlaps }) {
+function boxConnectivity({ boxes, overlaps }) {
   const candidates = [...overlaps];
   candidates.sort((a, b) => b.volume - a.volume || a.a - b.a || a.b - b.b);
   const components = boxes.map((_, i) => i), connections = [];
@@ -14,10 +14,25 @@ export function boxConnections({ boxes, overlaps }) {
     for (let i = 0; i < components.length; i++) if (components[i] === b) components[i] = a;
     if (connections.length === boxes.length - 1) break;
   }
-  return connections;
+  return { connections, components };
 }
 
-export function boxSkinWeights(vertices, boxes) {
+export function boxConnections(source) { return boxConnectivity(source).connections; }
+
+function clusterCollisionGroups(components, physics) {
+  const used = new Set(physics.entries.flatMap(entry => entry.shapes.map(shape => shape.getFilter().groupIndex)));
+  const groups = new Map();
+  let next = -1;
+  return components.map(component => {
+    if (!groups.has(component)) {
+      while (used.has(next)) next--;
+      groups.set(component, next--);
+    }
+    return groups.get(component);
+  });
+}
+
+export function boxSkinWeights(vertices, boxes, components = boxes.map(() => 0)) {
   const frames = boxes.map(box => ({
     center: new Vector3(...box.position), inverse: new Quaternion(...box.quaternion).invert(), half: box.size.map(size => size / 2),
   }));
@@ -31,15 +46,20 @@ export function boxSkinWeights(vertices, boxes) {
       const q = [Math.abs(local.x) - half[0], Math.abs(local.y) - half[1], Math.abs(local.z) - half[2]];
       const distance = Math.hypot(...q.map(value => Math.max(0, value))) + Math.min(Math.max(...q), 0);
       return { index, distance };
-    }).sort((a, b) => a.distance - b.distance || a.index - b.index).slice(0, 4);
-    const weights = distances.map(({ distance }) => Math.exp(-(distance - distances[0].distance) / .4));
+    }).sort((a, b) => a.distance - b.distance || a.index - b.index);
+    // A detached surface must not follow a nearby but unconnected bone.
+    const component = components[distances[0].index];
+    const influences = distances.filter(({ index }) => components[index] === component).slice(0, 4);
+    const weights = influences.map(({ distance }) => Math.exp(-(distance - influences[0].distance) / .4));
     const total = weights.reduce((sum, weight) => sum + weight, 0);
-    return distances.map(({ index }, i) => [index, weights[i] / total]);
+    return influences.map(({ index }, i) => [index, weights[i] / total]);
   });
 }
 
 export function createBoxRig(source, topology, surface, physics, onDeform) {
-  const skin = surface.mesh, weights = boxSkinWeights(topology.vertices, source.boxes);
+  const { connections, components } = boxConnectivity(source);
+  const collisionGroups = clusterCollisionGroups(components, physics);
+  const skin = surface.mesh, weights = boxSkinWeights(topology.vertices, source.boxes, components);
   const colliders = fitBoxColliders(topology, source.boxes);
   const bones = source.boxes.map((box, i) => {
     const bone = new Bone(); bone.name = `Source box ${i + 1}`;
@@ -112,11 +132,10 @@ export function createBoxRig(source, topology, surface, physics, onDeform) {
     for (const [i] of source.boxes.entries()) entries.push(physics.addBody({
       object: bones[i], body: { linearDamping: 1.5, angularDamping: 2 },
       shapes: colliders[i] ? [{ type: 'hull', points: colliders[i].points, maxVertices: MAX_COLLIDER_VERTICES,
-        // These bone regions deliberately intersect. Contacts within the rig
-        // would fight its rest pose; they still collide with outside bodies.
-        filter: { groupIndex: -1 } }] : [],
+        // Overlapping bone regions within a connected cluster ignore each
+        // other; detached pieces and other clusters can make contact.
+        filter: { groupIndex: collisionGroups[i] } }] : [],
     }));
-    const connections = boxConnections(source);
     for (const { a, b, anchor } of connections) {
       const worldAnchor = skin.localToWorld(new Vector3(...anchor));
       const frame = entry => ({ position: entry.body.getLocalPoint(worldAnchor), rotation: new Quaternion().copy(entry.body.getRotation()).invert() });
@@ -160,7 +179,7 @@ export function createBoxRig(source, topology, surface, physics, onDeform) {
       if (drag) drag.anchor.body.setTargetTransform({ position: drag.target }, Math.max(dt, .02), true);
     });
     sync();
-    return { bones, skeleton, skin, entries, joints, connections, weights, positions, colliders, colliderGroup, colliderLines, sync, dispose,
+    return { bones, skeleton, skin, entries, joints, connections, components, weights, positions, colliders, colliderGroup, colliderLines, sync, dispose,
       setCollidersVisible(value) { colliderGroup.visible = !!value; },
       pickCollider, beginDrag, endDrag, get dragging() { return !!drag; },
       moveDrag(point) { if (drag && !disposed) drag.target.copy(point); },

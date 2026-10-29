@@ -3,8 +3,8 @@ import assert from 'node:assert/strict';
 import { studioPalettes, applyStudioPalette, matchingStudioPalette } from '../src/studio-palettes.js';
 import { defaultMeshSetup, mergeMeshSetup, validateMeshSetup } from '../src/mesh-settings.js';
 
-test('all Blobby studio palettes preserve reflection settings and roundtrip their environment colors',()=>{
-  assert.deepEqual(studioPalettes.map(p=>p.id),['copper-blue','glacier','solar','orchid','citrus','ember','ink','pearl']);
+test('all studio palettes preserve reflection settings and roundtrip their environment colors',()=>{
+  assert.deepEqual(studioPalettes.slice(0,8).map(p=>p.id),['copper-blue','glacier','solar','orchid','citrus','ember','ink','pearl']);
   const original=mergeMeshSetup(defaultMeshSetup(),{lighting:{environment:{rotation:35,intensity:1.7}}});
   for(const palette of studioPalettes){
     const lighting=applyStudioPalette(original.lighting,palette.id),saved=validateMeshSetup({...original,lighting});

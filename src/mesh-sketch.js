@@ -1,6 +1,5 @@
-import { createSeededRandom } from './mesh-layers.js';
 import { fitMeshShadows } from './mesh-shadows.js';
-import { createMeshView } from './mesh-view.js';
+import { createSculptureGroup } from './sculpture-group.js';
 import { initPhysics, createPhysics } from './physics.js';
 import { bindColliderDrag } from './collider-drag.js';
 import { initCSG, createBoxUnion } from './box-union.js';
@@ -59,7 +58,7 @@ export async function mountMesh(root,{ui=false}={}) {
   const sun=new THREE.DirectionalLight('#fff5dc',3.3);sun.position.set(-3,7,4);sun.castShadow=true;sun.shadow.mapSize.set(2048,2048);Object.assign(sun.shadow.camera,{left:-6,right:6,top:7,bottom:-5,near:0.5,far:100});sun.shadow.bias=-0.0003;sun.shadow.normalBias=0.025;sun.shadow.radius=3;scene.add(sun,sun.target);
   const spotlight=new THREE.SpotLight();spotlight.name='Following spotlight';spotlight.castShadow=true;spotlight.shadow.mapSize.set(2048,2048);spotlight.shadow.camera.near=.1;spotlight.shadow.camera.far=100;scene.add(spotlight,spotlight.target);
   const meshMaterial=createFaceMetal();meshMaterial.envMap=environment.texture;
-  const views=createMeshView(scene,meshMaterial,physics);
+  const views=createSculptureGroup(scene,meshMaterial,physics);
   const textProp=createTextProp(Math.min(4,renderer.capabilities.getMaxAnisotropy()),1024);
   textProp.material.envMap=environment.texture;
   textProp.mesh.rotation.x=-Math.PI/2;textProp.mesh.position.set(0,-5.485,0);scene.add(textProp.mesh);
@@ -179,7 +178,7 @@ export async function mountMesh(root,{ui=false}={}) {
       if(action==='randomize')return apply({pipeline:{seed:(settings.pipeline.seed+1+Math.floor(Math.random()*1000000))%1000001}});
       if(!views.topology)throw new Error('No surface loaded.');
       if(action==='undo')views.undo();
-      else if(action==='triangulate')views.triangulate(undefined,{random:createSeededRandom(settings.pipeline.seed)});
+      else if(action==='triangulate')views.triangulate(undefined,{seed:settings.pipeline.seed});
       else if(action==='dualDiamond')views.dualDiamond();
       else if(action==='hexelate')views.hexelate({triangulate:settings.pipeline.hexelateTriangulateEnabled});
       else if(action==='dualNSided')views.dualNSided();
@@ -206,7 +205,6 @@ export async function mountMesh(root,{ui=false}={}) {
     camera.updateMatrixWorld();
     if(boxUnion?.seed!==settings.pipeline.seed||boxUnion?.spread!==settings.boxes.spread)boxUnion=createBoxUnion(settings.pipeline.seed,settings.boxes.spread);
     views.setMesh(boxUnion.mesh,settings,boxUnion);
-    views.surface.mesh.name='CSG union · seven boxes';
     dirty=true;syncMeshStatus();
     // Keep the saved orbit centered on the installed surface.
     if(settings.camera.follow){
@@ -214,7 +212,7 @@ export async function mountMesh(root,{ui=false}={}) {
       cameraFollow.reset(groupCenter());controls.update();
     }
     lightingControls.updatePosition(groupCenter());
-    for(const light of [sun,spotlight])if(light.visible&&light.castShadow)fitMeshShadows(light,views.surface?.mesh);
+    for(const light of [sun,spotlight])if(light.visible&&light.castShadow)fitMeshShadows(light,views.surfaces);
   }
   function resizeViewport(){
     const w=shell.clientWidth,h=shell.clientHeight;
@@ -240,7 +238,7 @@ export async function mountMesh(root,{ui=false}={}) {
     const dt=last?Math.min((time-last)/1000,0.05):0;last=time;
     if(dirty||time-statsTime>400) {
       const mesh=views.topology;
-      panel.stats(mesh?`${Math.round(1000/frameMs)} fps · ${mesh.vertices.length} vertices · ${mesh.faces.length} faces · ${views.edges.length} edges`:'No surface loaded');
+      panel.stats(mesh?`${Math.round(1000/frameMs)} fps · ${views.views.length} sculptures · ${mesh.vertices.length*views.views.length} vertices · ${mesh.faces.length*views.views.length} faces`:'No surface loaded');
       syncMeshStatus();dirty=false;statsTime=time;
     }
     colliderDrag.update();
@@ -249,7 +247,7 @@ export async function mountMesh(root,{ui=false}={}) {
     controls.update();
     paletteMotion.update(dt);
     lightingControls.updatePosition(groupCenter());
-    for(const light of [sun,spotlight])if(light.visible&&light.castShadow)fitMeshShadows(light,views.surface?.mesh);
+    for(const light of [sun,spotlight])if(light.visible&&light.castShadow)fitMeshShadows(light,views.surfaces);
     renderScene();recording.recorder.captureFrame();startup.reveal();stats?.update();
   });
   const thumbnailCapture = import.meta.env.DEV ? bindThumbnailCapture(shell, renderer.domElement, renderScene) : null;

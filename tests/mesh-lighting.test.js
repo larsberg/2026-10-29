@@ -49,3 +49,20 @@ test('following spotlight shadow covers the mesh and floor after translation and
     }
   }finally{mesh.geometry.dispose();mesh.material.dispose();light.shadow.dispose();}
 });
+
+test('one shadow projection contains all three separated sculpture surfaces',()=>{
+  const light=new DirectionalLight();light.position.set(-3,18,20);
+  const meshes=[[-5,0,4],[5,0,4],[0,0,-4]].map(position=>{
+    const mesh=new Mesh(new BoxGeometry(8,4,6),new MeshBasicMaterial());mesh.position.fromArray(position);return mesh;
+  });
+  try {
+    fitMeshShadows(light,meshes);light.shadow.updateMatrices(light);
+    for(const mesh of meshes){
+      const attr=mesh.geometry.attributes.position;
+      for(let i=0;i<attr.count;i++){
+        const p=new Vector3().fromBufferAttribute(attr,i).applyMatrix4(mesh.matrixWorld).project(light.shadow.camera);
+        assert.ok(Math.abs(p.x)<1&&Math.abs(p.y)<1&&Math.abs(p.z)<1);
+      }
+    }
+  }finally{meshes.forEach(mesh=>{mesh.geometry.dispose();mesh.material.dispose();});light.shadow.dispose();}
+});

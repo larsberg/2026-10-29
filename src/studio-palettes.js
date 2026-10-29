@@ -1,3 +1,5 @@
+import { referencePalettes } from './sketchbook-palettes.js';
+
 // The same color roles drive the studio bake, saved settings, and color pickers.
 // Intensities, positions, material properties, floor, and fog remain independent.
 export const studioColorFields = [
@@ -26,6 +28,13 @@ export const studioPalettes = [
   palette('ember', 'Ember / teal', ['#101c20','#ff914e','#fff0d6','#087f8c','#51d4cc','#d3584b','#e1ac69','#4c6f78'], '#ffdbb4','#80ddd9','#4e302b'),
   palette('ink', 'Ink / silver', ['#080b12','#c3ccd7','#ffffff','#526881','#9daec8','#919baa','#c8c0b6','#485568'], '#f2f4fa','#c4d1e5','#292e38'),
   palette('pearl', 'Pearl', ['#27222a','#edcfc1','#fff8ed','#9eb6cf','#c5e6dd','#dcb5cf','#e0c69f','#9f96b4'], '#fff0e4','#d9e8f2','#69515f'),
+  ...[...new Set(referencePalettes)].map((value, i) => {
+    const [background, key, strip, fill, rim] = value.split('-').map(color => `#${color}`);
+    // Reuse all five original swatches across the existing studio/light roles.
+    // Color-based IDs stay stable if the collection's order changes.
+    return palette(`sketchbook-${value}`, `Sketchbook ${String(i + 1).padStart(2, '0')}`,
+      [background, key, strip, fill, rim, key, fill, rim], strip, rim, background);
+  }),
 ];
 
 export function studioColorKey(environment) {

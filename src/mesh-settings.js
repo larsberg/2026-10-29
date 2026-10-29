@@ -66,7 +66,7 @@ export const meshFields = {
     ['followSmoothing', 'Follow smoothing (s)', DEFAULT_FOLLOW_SMOOTHING, 0, 2, 0.05],
     ['yaw', 'Yaw °', 0, -180, 180, 0.01],
     ['elevation', 'Elevation °', 0, -89.9, 89.9, 0.01],
-    ['distance', 'Distance', 14, MIN_CAMERA_DISTANCE, 400, 0.01],
+    ['distance', 'Distance', 34, MIN_CAMERA_DISTANCE, 400, 0.01],
     // Keep the expanded bounds compatible with earlier world-space saves.
     ['offsetX', 'Offset X', 0, -1000000, 1000000, 0.01],
     ['offsetY', 'Offset Y', 0, -1000000, 1000000, 0.01],

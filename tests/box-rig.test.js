@@ -25,7 +25,7 @@ function fixture() {
   return { physics, view, dispose() { view.dispose(); physics.dispose(); } };
 }
 
-test('source collider poses reproduce the CSG boundary and joint anchors lie inside both connected boxes', () => {
+test('source box frames reproduce the CSG boundary and joint anchors lie inside both connected boxes', () => {
   for (const vertex of source.mesh.vertices) {
     const distance = Math.min(...source.boxes.map(box => signedDistance(new Vector3(...vertex), box)));
     assert.ok(Math.abs(distance) < 2e-5, `Collider and CSG boundary differ by ${distance}`);
@@ -50,16 +50,53 @@ test('separated boxes have no joints and move independently of the overlapping c
     assert.equal(physics.joints.length, 2);
     for (const connection of rig.connections) assert.ok(separated.overlaps.includes(connection));
     const rest = rig.entries.map(({ body }) => new Vector3().copy(body.getPosition()));
+    const restMesh = rig.positions.slice();
+    for (const influences of rig.weights) {
+      if (influences[0][0] === 0) assert.deepEqual(influences, [[0, 1]], 'An isolated piece belongs entirely to its own bone.');
+    }
     const isolated = rig.entries[0].body;
     isolated.applyLinearImpulseToCenter({ x: isolated.getMass() * 2, y: 0, z: 0 }, true);
     for (let i = 0; i < 30; i++) physics.step(1 / 60);
     assert.ok(new Vector3().copy(isolated.getPosition()).distanceTo(rest[0]) > .5);
     for (let i = 1; i < 7; i++) assert.ok(new Vector3().copy(rig.entries[i].body.getPosition()).distanceTo(rest[i]) < 1e-4);
+    for (const [i, influences] of rig.weights.entries()) if (influences[0][0] !== 0) {
+      assert.ok(maximumDifference(rig.positions.slice(i * 3, i * 3 + 3), restMesh.slice(i * 3, i * 3 + 3)) < 1e-4,
+        'Moving a detached piece must not pull the skin of another cluster.');
+    }
     view.setMesh(source.mesh, setup, source);
     assert.equal(physics.joints.length, 6, 'Bringing boxes back together rebuilds their overlap connections.');
     view.setMesh(separated.mesh, setup, separated);
     assert.equal(physics.joints.length, 2, 'Spreading them apart removes the former connections.');
     assert.deepEqual(boxConnections({ boxes: separated.boxes, overlaps: [] }), []);
+  } finally { view.dispose(); physics.dispose(); }
+});
+
+test('a detached hull makes contact with a connected cluster and transfers motion', () => {
+  const separated = createBoxUnion(1, 4), physics = createPhysics(setup.rigidBody);
+  const view = createMeshView(new Scene(), undefined, physics);
+  try {
+    view.configure(setup); view.setMesh(separated.mesh, setup, separated);
+    const rig = view.rig, moving = rig.entries[0].body;
+    const tags = new Map(rig.entries.flatMap((entry, i) => entry.shapes.map(shape => {
+      shape.enableContactEvents(true); return [shape.getUserData(), i];
+    })));
+    const target = new Vector3().copy(rig.entries[2].body.getWorldPoint(rig.colliders[2].bounds.getCenter(new Vector3())));
+    const offset = rig.colliders[0].bounds.getCenter(new Vector3()).applyQuaternion(new Quaternion().copy(moving.getRotation()));
+    moving.setTransform(target.clone().add(new Vector3(0, 0, 6)).sub(offset), moving.getRotation());
+    moving.setLinearDamping(0); moving.setLinearVelocity({ x: 0, y: 0, z: -12 });
+    const rest = new Vector3().copy(rig.entries[2].body.getPosition()), contacts = [];
+    for (let step = 0; step < 120; step++) {
+      physics.step(1 / 120);
+      for (const event of physics.world.getContactEvents().begin) {
+        contacts.push([tags.get(event.shapeUserDataA), tags.get(event.shapeUserDataB)]);
+      }
+    }
+    assert.ok(contacts.some(pair => pair.includes(0) && pair.includes(2)), 'The detached hull must hit the larger cluster.');
+    for (const [a, b] of contacts) assert.notEqual(rig.components[a], rig.components[b], 'Overlapping hulls in one cluster must not fight their joints.');
+    assert.ok(rest.distanceTo(new Vector3().copy(rig.entries[2].body.getPosition())) > .5, 'Contact must push the cluster.');
+    assert.ok(moving.getLinearVelocity().z > -10, 'Contact must slow the detached piece.');
+    assert.equal(physics.joints.length, 2, 'Touching pieces must not acquire new joints.');
+    assert.ok(rig.positions.every(Number.isFinite));
   } finally { view.dispose(); physics.dispose(); }
 });
 
@@ -125,8 +162,10 @@ test('collider outlines follow body poses and remain visible with the surface an
     for (const [i, line] of rig.colliderLines.entries()) {
       assert.ok(line.getWorldPosition(new Vector3()).distanceTo(new Vector3().copy(rig.entries[i].body.getPosition())) < 1e-6);
       assert.ok(line.getWorldQuaternion(new Quaternion()).angleTo(new Quaternion().copy(rig.entries[i].body.getRotation()).normalize()) < 1e-6);
-      assert.ok(line.getWorldScale(new Vector3()).distanceTo(new Vector3(...source.boxes[i].size)) < 1e-6);
-      assert.equal(line.geometry.attributes.position.count, 24);
+      assert.ok(line.getWorldScale(new Vector3()).distanceTo(new Vector3(1, 1, 1)) < 1e-6);
+      line.geometry.computeBoundingBox();
+      assert.ok(line.geometry.boundingBox.min.distanceTo(rig.colliders[i].bounds.min) < 1e-6);
+      assert.ok(line.geometry.boundingBox.max.distanceTo(rig.colliders[i].bounds.max) < 1e-6);
       assert.equal(line.layers.isEnabled(1), false, 'Collider guides must stay out of AO.');
     }
     view.configure(mergeMeshSetup(debug, { visibility: { colliders: false } }));
