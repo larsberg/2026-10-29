@@ -8,7 +8,7 @@ import { meshInfo } from './mesh-info.js';
 import { herdAudioSettings } from './herd-score.js';
 import { rigidBodyFields, validateRigidBody } from './rigid-body-settings.js';
 import { boxFields } from './box-settings.js';
-import { DEFAULT_JUMP_POWER } from './herd-rhythm.js';
+import { DEFAULT_JUMP_POWER, DEFAULT_SMALL_JUMP_PERCENT, DEFAULT_HERD_COUNT } from './herd-rhythm.js';
 import { projectedLineFields } from './projected-lines.js';
 
 export const meshFields = {
@@ -34,7 +34,11 @@ export const meshFields = {
     ['smoothingStrength', 'Smoothing strength', 0.5, 0.01, 1, 0.01],
   ],
   rigidBody: rigidBodyFields,
-  herd: [['jumpPower', 'Jump force', DEFAULT_JUMP_POWER, 0, 1, .001]],
+  herd: [
+    ['count', 'Number of bodies', DEFAULT_HERD_COUNT, 1, 11, 1],
+    ['jumpPower', 'Jump force', DEFAULT_JUMP_POWER, 0, 1, .001],
+    ['smallJumpPercent', 'Small jump force (%)', DEFAULT_SMALL_JUMP_PERCENT, 0, 100, 1],
+  ],
   audio: [
     ['enabled', 'Enable audio', false],
     ['bpm', 'Tempo (BPM)', 120, 40, 200, 0.1],
@@ -112,6 +116,8 @@ export function validateMeshSetup(value) {
     pipeline: value.pipeline === undefined ? result.pipeline : value.pipeline,
     rigidBody:validateRigidBody(value.rigidBody) };
   if (value.lines && value.lines.seed === undefined) value.lines = { ...value.lines, seed: result.lines.seed };
+  if (value.herd && value.herd.smallJumpPercent === undefined) value.herd = { ...value.herd, smallJumpPercent: result.herd.smallJumpPercent };
+  if (value.herd && value.herd.count === undefined) value.herd = { ...value.herd, count: result.herd.count };
   if (value.lines && value.lines.offsetSpeed === undefined) value.lines = { ...value.lines, offsetSpeed: result.lines.offsetSpeed };
   if (value.visibility && value.visibility.surface === undefined) value.visibility = { ...value.visibility, surface: result.visibility.surface };
   if (value.visibility && value.visibility.colliders === undefined) value.visibility = { ...value.visibility, colliders: result.visibility.colliders };

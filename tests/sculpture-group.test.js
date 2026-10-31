@@ -80,3 +80,32 @@ test('editing, undo, and regeneration affect all copies without accumulating phy
     group.clear(); assert.equal(physics.entries.length, 0); assert.equal(physics.joints.length, 0);
   } finally { dispose(); }
 });
+
+test('changing body count adds and disposes whole rigs while preserving distinct reproducible seeds', () => {
+  const { group, physics, dispose } = fixture();
+  try {
+    const full = createHerdSources(450725, 2, 11);
+    for (const count of [1, 11, 3, 7]) {
+      const oldEntries = group.views.flatMap(view => view.rig.entries);
+      const removedMaterials = group.views.slice(count).map(view => view.surface.mesh.material);
+      let disposedMaterials = 0;
+      for (const material of removedMaterials) material.addEventListener('dispose', () => disposedMaterials++);
+      const entry = group.views.at(-1).rig.entries[0];
+      assert.equal(group.rig.beginDrag(entry, new Vector3().copy(entry.body.getWorldCenterOfMass())), true);
+      const next = createHerdSources(450725, 2, count);
+      group.setSources(next, setup);
+      assert.equal(group.rig.dragging, false);
+      assert.equal(disposedMaterials, removedMaterials.length);
+      assert.equal(group.views.length, count); assert.equal(group.surfaces.length, count);
+      assert.equal(physics.entries.length, count * 5);
+      assert.ok(physics.entries.every(entry => !oldEntries.includes(entry)));
+      assert.equal(physics.joints.length, group.views.reduce((sum, view) => sum + view.rig.connections.length, 0));
+      assert.equal(new Set(next.map(source => source.seed)).size, count);
+      assert.deepEqual(next.map(source => source.mesh), full.slice(0, count).map(source => source.mesh));
+      const boxes = group.views.map(view => view.getBounds(new Box3()));
+      for (let i = 0; i < count; i++) for (let j = i + 1; j < count; j++) assert.equal(boxes[i].intersectsBox(boxes[j]), false);
+      group.triangulate(undefined, { seed: 17 }); group.undo();
+      group.views.forEach(view => assert.ok(view.rig.positions.every(Number.isFinite)));
+    }
+  } finally { dispose(); }
+});

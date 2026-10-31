@@ -75,7 +75,7 @@ export async function mountMesh(root,{ui=false}={}) {
   let panel,lightingControls,stats,focus,colliderDrag,applyingCamera=false,setupBusy=false;
   const audioStatus=shell.querySelector('.march-audio-status');
   const marchAudio=createMarchAudio({pattern:createHerdScore(settings.pipeline.seed),canPlay:()=>running&&!document.hidden,onStatus:message=>{audioStatus.textContent=message;}});
-  herdMotion=createHerdMotion(physics,views,ground,{getBeat:()=>marchAudio.beat,getGroove:beat=>marchAudio.readMotion(beat),jumpPower:settings.herd.jumpPower});
+  herdMotion=createHerdMotion(physics,views,ground,{getBeat:()=>marchAudio.beat,getGroove:beat=>marchAudio.readMotion(beat),...settings.herd});
   let scoreSeed=settings.pipeline.seed;
   const recording=bindRecordingControls(shell,renderer.domElement,marchAudio);
   const paletteMotion=createStudioPaletteMotion({environment,scene,renderer,sun,hemisphere,spotlight,lighting:settings.lighting});
@@ -119,7 +119,7 @@ export async function mountMesh(root,{ui=false}={}) {
     const currentCamera=getSetup().camera;
     const restoringView=value.version!==undefined,followChanged=next.camera.follow!==currentCamera.follow;
     const cameraChanged=restoringView||followChanged||['yaw','elevation','distance','offsetX','offsetY','offsetZ'].some(key=>next.camera[key]!==currentCamera[key]);
-    const meshChanged=next.boxes.spread!==settings.boxes.spread||JSON.stringify(next.pipeline)!==JSON.stringify(settings.pipeline);
+    const meshChanged=next.herd.count!==settings.herd.count||next.boxes.spread!==settings.boxes.spread||JSON.stringify(next.pipeline)!==JSON.stringify(settings.pipeline);
     settings=next;
     lineProjection.configure(settings.lines,settings.lighting.environment);
     physics.configure(settings.rigidBody);
@@ -216,7 +216,7 @@ export async function mountMesh(root,{ui=false}={}) {
   function regenerate() {
     endDrag();
     camera.updateMatrixWorld();
-    if(boxUnions?.[0].seed!==settings.pipeline.seed||boxUnions?.[0].spread!==settings.boxes.spread)boxUnions=createHerdSources(settings.pipeline.seed,settings.boxes.spread);
+    if(boxUnions?.length!==settings.herd.count||boxUnions?.[0].seed!==settings.pipeline.seed||boxUnions?.[0].spread!==settings.boxes.spread)boxUnions=createHerdSources(settings.pipeline.seed,settings.boxes.spread,settings.herd.count);
     views.setSources(boxUnions,settings);
     if(scoreSeed!==settings.pipeline.seed){scoreSeed=settings.pipeline.seed;void marchAudio.setPattern(createHerdScore(scoreSeed));}
     marchAudio.restart();herdMotion.reset(settings.pipeline.seed);lineProjection.resetMotion();
@@ -258,8 +258,10 @@ export async function mountMesh(root,{ui=false}={}) {
     }
     colliderDrag.update();
     if(running&&!setupBusy){
+      const events=marchAudio.drainEvents();
+      herdMotion.triggerHarmony(events);
       physics.step(dt);
-      lineProjection.updateMotion(dt,marchAudio.drainEvents());
+      lineProjection.updateMotion(dt,events);
     }
     cameraFollow.update(camera,controls,groupCenter(),settings.camera.follow,followSuspended(),dt,settings.camera.followSmoothing);
     controls.update();

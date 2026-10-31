@@ -1,12 +1,15 @@
 import { Box3, Quaternion, Vector3 } from 'three';
 import { createSeededRandom } from './mesh-layers.js';
-import { HERD_BPM, JUMP_BEATS, CROUCH_BEATS, HERD_HEADING, DEFAULT_JUMP_POWER } from './herd-rhythm.js';
+import { HERD_BPM, JUMP_BEATS, CROUCH_BEATS, HERD_HEADING, DEFAULT_JUMP_POWER, DEFAULT_SMALL_JUMP_PERCENT } from './herd-rhythm.js';
+
+const HARMONY_DURATION = .2;
 
 // A shared pulse chooses a grounded rear member, crouches it, and launches its
 // connected rig over the pack. Flight is ballistic: no midair propulsion or
 // pose animation. Contacts and the original joints handle tumble and landing.
-export function createHerdMotion(physics, group, ground, { getBeat, getGroove, bpm = HERD_BPM, jumpPower = DEFAULT_JUMP_POWER } = {}) {
+export function createHerdMotion(physics, group, ground, { getBeat, getGroove, bpm = HERD_BPM, jumpPower = DEFAULT_JUMP_POWER, smallJumpPercent = DEFAULT_SMALL_JUMP_PERCENT } = {}) {
   let states = [], random, elapsed = 0, previousBeat = 0, scheduledBeat = JUMP_BEATS, queued = null;
+  let harmonyAge = HARMONY_DURATION, harmonyStrength = 0, harmonyAmount = 0, harmonyBeat, harmonyChords = 0;
   const pack = new Vector3(), direction = new Vector3(Math.sin(HERD_HEADING), 0, -Math.cos(HERD_HEADING));
   const sideways = new Vector3(-direction.z, 0, direction.x), spin = new Vector3(), velocity = new Vector3();
   const desired = new Vector3(), curl = new Quaternion(), frameA = new Quaternion(), frameB = new Quaternion();
@@ -18,8 +21,36 @@ export function createHerdMotion(physics, group, ground, { getBeat, getGroove, b
       foot.entry.body.setLinearDamping(foot.damping); foot.entry.body.setAngularDamping(foot.angularDamping); foot.entry.body.setBullet(foot.bullet);
     }
   }
+  function releaseHarmony(state) {
+    for (const link of state.harmony.active) {
+      link.joint.setTargetRotation(identity);
+      link.joint.setSpringHertz(link.options.hertz); link.joint.setSpringDampingRatio(link.options.dampingRatio);
+    }
+    state.harmony.active.length = 0; state.harmony.amount = 0;
+  }
+  function flexHarmony(state) {
+    if (harmonyAmount <= 0) return;
+    for (const { link, axis } of state.harmony.joints) {
+      // Walking owns its leg joints; flex the remaining body connections.
+      if (state.legs.some(leg => leg.link === link)) continue;
+      link.joint.setTargetRotation(curl.setFromAxisAngle(axis, harmonyAmount * .28));
+      link.joint.setSpringHertz(4); link.joint.setSpringDampingRatio(1);
+      link.a.body.setAwake(true); link.b.body.setAwake(true);
+      state.harmony.active.push(link);
+    }
+    if (state.harmony.active.length) state.harmony.amount = harmonyAmount;
+  }
+  function triggerHarmony(events) {
+    for (const event of events) if (event.layer === 'keys') {
+      // A three-note chord is one gesture, even if notes arrive in separate frames.
+      if (event.beat !== harmonyBeat) {
+        harmonyBeat = event.beat; harmonyAge = 0; harmonyStrength = 0; harmonyChords++;
+      }
+      harmonyStrength = Math.max(harmonyStrength, Math.min(1, event.gain / .65));
+    }
+  }
   function relax(state) {
-    restoreFlight(state); releaseClench(state);
+    restoreFlight(state); releaseClench(state); releaseHarmony(state);
     for (const leg of state.legs) if (leg.plant) { physics.removeJoint(leg.plant); leg.plant = null; }
     for (const leg of state.legs) if (leg.muscle) { physics.removeJoint(leg.muscle); leg.muscle = null; }
     for (const link of state.rig?.joints ?? []) {
@@ -32,6 +63,7 @@ export function createHerdMotion(physics, group, ground, { getBeat, getGroove, b
   function reset(seed = group.sources[0]?.seed ?? 1) {
     for (const [i, state] of states.entries()) if (state.rig === group.views[i]?.rig) relax(state);
     random = createSeededRandom(seed + 7919); elapsed = 0; previousBeat = getBeat?.() ?? 0;
+    harmonyAge = HARMONY_DURATION; harmonyStrength = harmonyAmount = harmonyChords = 0; harmonyBeat = undefined;
     scheduledBeat = (Math.floor(previousBeat / JUMP_BEATS) + 1) * JUMP_BEATS; queued = null;
     states = group.views.map((view, i) => {
       const rig = view.rig;
@@ -50,12 +82,16 @@ export function createHerdMotion(physics, group, ground, { getBeat, getGroove, b
         bounds.expandByPoint(point.copy(foot.entry.body.getWorldPoint(vertex)));
       }
       const size = bounds.getSize(new Vector3()), bodyLength = Math.max(1, size.x, size.y, size.z);
+      const harmonyRandom = createSeededRandom(((group.sources[i]?.seed ?? seed + i * 104729) + 982451653) >>> 0);
+      const harmonyJoints = (rig?.joints ?? []).filter(link => [link.a, link.b].every(entry => supportFeet.some(foot => foot.entry === entry)))
+        .map(link => ({ link, axis: new Vector3(harmonyRandom() - .5, .3, harmonyRandom() - .5).normalize() }));
       return { rig, feet, entries: feet.map(foot => foot.entry), center: new Vector3(), velocity: new Vector3(), mass: 0,
         supportFeet, bodyLength, front: 0, supportMass: masses.get(mainComponent) ?? 0, supportCenter: new Vector3(), supportVelocity: new Vector3(),
         index: i, random: createSeededRandom(((group.sources[i]?.seed ?? seed + i * 104729) + 3571) >>> 0),
         clench: { amount: 0, links: [], selectedRear: [], startRadius: 0 },
+        harmony: { joints: harmonyJoints, active: [], amount: 0 },
         gait: { phase: i * 2.399, swayRate: .65 + random() * .35, steps: 0, pulse: 0, drive: 1 },
-        hop: { phase: 'settle', remaining: .6, kicks: 0, lastKick: null, lastLanding: null },
+        hop: { phase: 'settle', remaining: .6, kicks: 0, smallJumps: 0, lastKick: null, lastSmallJump: null, lastLaunch: null, lastLanding: null },
         direction: direction.clone(), active: [], legs: [0, 1].map(j => ({ phase: (i * .17 + j * .5) % 1,
           duration: 1.3 + random() * .4, foot: null, link: null, stage: 'search' })) };
     });
@@ -162,36 +198,50 @@ export function createHerdMotion(physics, group, ground, { getBeat, getGroove, b
     state.direction.lerp(desired.normalize(), Math.min(1, dt * 2.5)).normalize();
   }
   const contactsOf = state => state.supportFeet.filter(foot => foot.contact.y < .06);
+  const readyToJump = state => state.hop.phase === 'settle' && state.hop.remaining <= 0 && contactsOf(state).length;
+  const rearOrder = (a, b) => a.supportCenter.dot(direction) - b.supportCenter.dot(direction) || a.index - b.index;
   function candidates() {
     return states.filter(state => state.supportMass > 0 && !state.rig.dragging
-      && state.hop.phase === 'settle' && state.hop.remaining <= 0 && contactsOf(state).length)
-      .sort((a, b) => a.supportCenter.dot(direction) - b.supportCenter.dot(direction) || a.index - b.index);
+      && readyToJump(state)).sort(rearOrder);
   }
-  function launch(state, beat, gravity) {
+  function nextRear() {
+    // A short hop or recovery must not hand the rear body's long jump to a
+    // forward neighbor. Only an ongoing long leap or a grab removes its turn.
+    return states.filter(state => state.supportMass > 0 && !state.rig.dragging
+      && (!['flight', 'land'].includes(state.hop.phase) || state.hop.lastLaunch?.small))
+      .sort(rearOrder)[0];
+  }
+  function launch(state, beat, gravity, small = false) {
     const contacts = contactsOf(state);
-    if (!contacts.length || gravity <= 0 || jumpPower <= 0 || state.rig.dragging) return false;
-    const eligibleRear = state.clench.selectedRear;
+    const power = jumpPower * (small ? smallJumpPercent / 100 : 1);
+    if (!contacts.length || gravity <= 0 || power <= 0 || state.rig.dragging) return false;
+    const eligibleRear = small ? [] : state.clench.selectedRear;
     const clench = state.clench.amount;
-    releaseClench(state);
+    releaseClench(state); releaseHarmony(state);
     for (const leg of state.legs) release(state, leg);
     // Measure the actual leading hull edge, including bodies already crossing.
     // Future landing targets are not positions and must not extend this bound.
     const front = Math.max(...states.filter(other => !other.rig.dragging && other.supportMass > 0).map(other => other.front));
     const length = states.reduce((sum, other) => sum + other.bodyLength, 0) / states.length;
-    const laneWidth = length * .85, lateralCenter = pack.dot(sideways);
-    const lanes = [-1, 0, 1].map(lane => {
-      const target = direction.clone().multiplyScalar(front + state.bodyLength)
-        .addScaledVector(sideways, lateralCenter + lane * laneWidth);
-      const clearance = Math.min(...states.filter(other => other !== state).map(other => {
-        const p = other.hop.phase === 'flight' ? other.hop.lastKick.target : other.supportCenter;
-        return Math.hypot(p.x - target.x, p.z - target.z);
-      }));
-      // Prefer a clear continuation of the animal's lane. Crossing diagonally
-      // through another launch path can knock both bodies out of their arcs.
-      const lateralTravel = Math.abs(target.clone().sub(state.supportCenter).dot(sideways));
-      return { target, clearance: clearance - lateralTravel * .65 };
-    }).sort((a, b) => b.clearance - a.clearance);
-    const target = lanes[0].target, start = state.supportCenter.clone();
+    const start = state.supportCenter.clone();
+    let target = pack.clone();
+    if (!small) {
+      const laneWidth = length * .85, lateralCenter = pack.dot(sideways);
+      const neighbors = states.filter(other => other !== state);
+      const lanes = (neighbors.length ? [-1, 0, 1] : [0]).map(lane => {
+        const target = direction.clone().multiplyScalar(front + state.bodyLength)
+          .addScaledVector(sideways, lateralCenter + lane * laneWidth);
+        const clearance = neighbors.length ? Math.min(...neighbors.map(other => {
+          const p = other.hop.phase === 'flight' ? other.hop.lastLaunch.target : other.supportCenter;
+          return Math.hypot(p.x - target.x, p.z - target.z);
+        })) : 0;
+        // Prefer a clear continuation of the animal's lane. Crossing diagonally
+        // through another launch path can knock both bodies out of their arcs.
+        const lateralTravel = Math.abs(target.clone().sub(state.supportCenter).dot(sideways));
+        return { target, clearance: clearance - lateralTravel * .65 };
+      }).sort((a, b) => b.clearance - a.clearance);
+      target = lanes[0].target;
+    }
     target.y = start.y;
     const distance = Math.hypot(target.x - start.x, target.z - start.z);
     // Tall enough to pass above another body while rotating, even on a short
@@ -199,26 +249,29 @@ export function createHerdMotion(physics, group, ground, { getBeat, getGroove, b
     const height = Math.max(state.bodyLength * 1.65, length * 1.55, distance * .46);
     const launchSpeed = Math.sqrt(2 * gravity * height), flightTime = 2 * launchSpeed / gravity;
     velocity.copy(target).sub(start).divideScalar(flightTime); velocity.y = launchSpeed;
-    const turns = .8 + state.random() * .35;
+    const turns = small ? 0 : .8 + state.random() * .35;
     spin.copy(sideways).multiplyScalar(-Math.PI * 2 * turns / flightTime);
     // A contact-gated push-off is transmitted across the connected hulls. The
     // coherent linear + angular impulse avoids tearing one foot off the rig.
     // Power scales the launch impulse and added spin; 1 preserves the original
     // strength. It happens once at takeoff, leaving transforms to the solver.
-    impulse.copy(velocity).sub(state.supportVelocity).multiplyScalar(state.supportMass * jumpPower);
+    impulse.copy(velocity).sub(state.supportVelocity).multiplyScalar(state.supportMass * power);
     for (const foot of state.supportFeet) {
       const body = foot.entry.body;
       body.setLinearDamping(.015); body.setAngularDamping(.03); body.setBullet(true);
-      point.copy(foot.center).sub(start).crossVectors(spin, point).add(velocity).sub(foot.velocity).multiplyScalar(foot.mass * jumpPower);
+      point.copy(foot.center).sub(start).crossVectors(spin, point).add(velocity).sub(foot.velocity).multiplyScalar(foot.mass * power);
       body.applyLinearImpulse(point, foot.center, true);
-      body.setAngularVelocity(point.copy(body.getAngularVelocity()).lerp(spin, jumpPower)); body.setAwake(true);
+      body.setAngularVelocity(point.copy(body.getAngularVelocity()).lerp(spin, power)); body.setAwake(true);
     }
-    state.hop.phase = 'flight'; state.hop.remaining = .15; state.hop.kicks++;
-    state.hop.lastKick = { time: elapsed, beat, actualBeat: getBeat?.() ?? elapsed * bpm / 60,
-      front, target, start, flightTime, turns, power: jumpPower, clench, bodyLength: state.bodyLength, targetHeight: height,
+    state.hop.phase = 'flight'; state.hop.remaining = small ? Math.min(.15, flightTime * power * .5) : .15;
+    const launch = { time: elapsed, beat, actualBeat: getBeat?.() ?? elapsed * bpm / 60,
+      small, front, target, start, flightTime, turns, power, clench, bodyLength: state.bodyLength, targetHeight: height,
       contactY: Math.max(...contacts.map(foot => foot.contact.y)), impulse: impulse.clone(),
       feet: contacts.map(foot => ({ index: foot.index, contactY: foot.contact.y })),
       eligibleRear, direction: direction.clone() };
+    state.hop.lastLaunch = launch;
+    if (small) { state.hop.smallJumps++; state.hop.lastSmallJump = launch; }
+    else { state.hop.kicks++; state.hop.lastKick = launch; }
     return true;
   }
   function updateHop(state, dt) {
@@ -232,14 +285,14 @@ export function createHerdMotion(physics, group, ground, { getBeat, getGroove, b
           foot.entry.body.setLinearDamping(8); foot.entry.body.setAngularDamping(10);
           foot.entry.body.setBullet(foot.bullet);
         }
-        hop.lastLanding = { time: elapsed, center: state.supportCenter.clone(), kick: hop.kicks };
-        hop.phase = 'land'; hop.remaining = .35;
+        if (!hop.lastLaunch.small) hop.lastLanding = { time: elapsed, center: state.supportCenter.clone(), kick: hop.kicks };
+        hop.phase = 'land'; hop.remaining = hop.lastLaunch.small ? .08 : .35;
       }
       return true;
     }
     if (hop.phase === 'land') {
       if (hop.remaining > 0) return true;
-      restoreFlight(state); hop.phase = 'settle'; hop.remaining = .2;
+      restoreFlight(state); hop.phase = 'settle'; hop.remaining = hop.lastLaunch.small ? 0 : .2;
     }
     return hop.phase !== 'crouch';
   }
@@ -261,7 +314,8 @@ export function createHerdMotion(physics, group, ground, { getBeat, getGroove, b
       return;
     }
     if (!queued && beat >= scheduledBeat - CROUCH_BEATS && beat < scheduledBeat && gravity > 0) {
-      queued = candidates()[0] ?? null;
+      const rear = smallJumpPercent > 0 ? nextRear() : candidates()[0];
+      queued = rear && readyToJump(rear) ? rear : null;
       if (queued) beginClench(queued);
     }
     if (beat + 1e-7 >= scheduledBeat) {
@@ -274,6 +328,12 @@ export function createHerdMotion(physics, group, ground, { getBeat, getGroove, b
           for (const leg of queued.legs) release(queued, leg);
         }
       }
+      // Reserve the next rear body before assigning small hops, so it can
+      // plant and prepare the following long leap instead of hopping again.
+      const rear = nextRear();
+      if (smallJumpPercent > 0) for (const state of candidates()) {
+        if (state !== queued && state !== rear) launch(state, scheduledBeat, gravity, true);
+      }
       queued = null; scheduledBeat += JUMP_BEATS;
     }
   }
@@ -285,7 +345,10 @@ export function createHerdMotion(physics, group, ground, { getBeat, getGroove, b
     pack.set(0, 0, 0);
     for (const state of states) { measure(state); pack.add(state.supportCenter); }
     pack.divideScalar(states.length);
-    for (const state of states) updateHop(state, dt);
+    // Restore last tick's free joints before walking or clenching claims them.
+    for (const state of states) { releaseHarmony(state); updateHop(state, dt); }
+    harmonyAge = Math.min(HARMONY_DURATION, harmonyAge + dt);
+    harmonyAmount = harmonyAge < HARMONY_DURATION - 1e-9 ? Math.sin(Math.PI * harmonyAge / HARMONY_DURATION) * harmonyStrength : 0;
     const beat = getBeat?.() ?? elapsed * bpm / 60;
     const groove = getGroove?.(beat);
     const bass = Math.max(0, Math.min(1, groove?.bass ?? 0)), kick = Math.max(0, Math.min(1, groove?.kick ?? 0));
@@ -366,6 +429,7 @@ export function createHerdMotion(physics, group, ground, { getBeat, getGroove, b
         if (stance) { state.active.push(leg.foot.entry); leg.foot.entry.body.setAwake(true); }
       }
       if (state.hop.phase === 'crouch') updateClench(state, beat);
+      else flexHarmony(state);
     }
     return { substeps: states.some(state => ['crouch', 'flight', 'land'].includes(state.hop.phase) || state.supportVelocity.lengthSq() > 225) ? 8 : 4 };
   });
@@ -386,12 +450,15 @@ export function createHerdMotion(physics, group, ground, { getBeat, getGroove, b
     }
   });
   reset();
-  return { reset,
-    configure({ jumpPower: value }) {
+  return { reset, triggerHarmony,
+    configure({ jumpPower: value = jumpPower, smallJumpPercent: percent = smallJumpPercent }) {
       if (!Number.isFinite(value) || value < 0 || value > 1) throw new Error('Invalid Jump power.');
-      jumpPower = value;
+      if (!Number.isFinite(percent) || percent < 0 || percent > 100) throw new Error('Invalid Small jump force.');
+      jumpPower = value; smallJumpPercent = percent;
     },
     get jumpPower() { return jumpPower; },
+    get smallJumpPercent() { return smallJumpPercent; },
+    get harmony() { return { chords: harmonyChords, beat: harmonyBeat, amount: harmonyAmount }; },
     get states() { return states; }, get elapsed() { return elapsed; },
     get direction() { return direction.clone(); }, get scheduledBeat() { return scheduledBeat; },
     dispose() { unsubscribe(); unsubscribeSync(); for (const [i, state] of states.entries()) if (state.rig === group.views[i]?.rig) relax(state); states = []; },

@@ -76,8 +76,8 @@
     },
     "occlusion": {
       "enabled": true,
-      "intensity": 1.67,
-      "radius": 1.08,
+      "intensity": 1.34,
+      "radius": 2.17,
       "aoOnly": false
     }
   },
@@ -154,20 +154,20 @@
   },
   "lines": {
     "enabled": true,
-    "spacing": 7.65,
-    "angle": 27,
-    "tilt": 69,
+    "spacing": 6.85,
+    "angle": 47,
+    "tilt": 45,
     "offset": 0,
     "offsetSpeed": 0.096,
     "strength": 1,
-    "seed": 1
+    "seed": 3
   },
   "boxes": {
-    "spread": 2.55
+    "spread": 2.45
   },
   "pipeline": {
     "enabled": true,
-    "seed": 732233,
+    "seed": 732234,
     "triangulateEnabled": true,
     "initialDiamondDualEnabled": true,
     "faceCenterDualEnabled": false,
@@ -189,7 +189,9 @@
     "friction": 0.55
   },
   "herd": {
-    "jumpPower": 0.762
+    "count": 8,
+    "jumpPower": 0.783,
+    "smallJumpPercent": 29
   },
   "audio": {
     "enabled": true,
@@ -298,9 +300,9 @@
     "follow": true,
     "optimizedTextures": false,
     "followSmoothing": 0.45,
-    "yaw": 152.8366826446,
-    "elevation": 5.102054429,
-    "distance": 35.2836992521,
+    "yaw": 48.1180956446,
+    "elevation": 17.6984861486,
+    "distance": 33.0754570598,
     "offsetX": 0,
     "offsetY": 0,
     "offsetZ": 0,

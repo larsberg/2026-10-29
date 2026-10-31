@@ -2,16 +2,18 @@ import { Box3, DoubleSide, Group, Vector3 } from 'three';
 import { createMeshLayers, createSeededRandom } from './mesh-layers.js';
 import { createMeshView } from './mesh-view.js';
 import { createBoxUnion } from './box-union.js';
+import { DEFAULT_HERD_COUNT } from './herd-rhythm.js';
 
-export const SCULPTURE_COUNT = 7;
+export const SCULPTURE_COUNT = DEFAULT_HERD_COUNT;
 
 // One saved herd seed reproducibly gives every member its own shape seed.
-export function createHerdSources(seed, spread) {
-  return Array.from({ length: SCULPTURE_COUNT }, (_, i) => createBoxUnion((seed + i * 104729) % 1000001, spread));
+export function createHerdSources(seed, spread, count = DEFAULT_HERD_COUNT) {
+  if (!Number.isInteger(count) || count < 1 || count > 11) throw new Error('Number of bodies must be between 1 and 11.');
+  return Array.from({ length: count }, (_, i) => createBoxUnion((seed + i * 104729) % 1000001, spread));
 }
 
 export function createSculptureGroup(scene, material, physics, projection) {
-  const object = new Group(); object.name = 'Seven CSG sculptures'; scene.add(object);
+  const object = new Group(); object.name = 'CSG herd'; scene.add(object);
   // Each skin needs its own polygon-normal texture uniforms. Keep the material
   // controls shared, but give each copy an independent material/shader binding.
   const materials = Array.from({ length: SCULPTURE_COUNT }, () => material.clone());
@@ -67,6 +69,7 @@ export function createSculptureGroup(scene, material, physics, projection) {
     get canUndo() { return views.every(view => view.canUndo); },
     get sources() { return sources; },
     setSources(nextSources, settings) {
+      if (nextSources.length < 1 || nextSources.length > 11) throw new Error('Number of bodies must be between 1 and 11.');
       rig.endDrag();
       sources = nextSources;
       const layers = sources.map(source => createMeshLayers(source.mesh, { ...settings.pipeline, seed: source.seed }));
@@ -89,6 +92,14 @@ export function createSculptureGroup(scene, material, physics, projection) {
       for (const position of positions) position.z -= (depth - gap) / 2;
       // Clear every old rig first so rebuilding never mixes old/new colliders.
       views.forEach(view => view.clear());
+      while (views.length > sources.length) {
+        views.pop().dispose(); unbindProjection.pop()?.(); materials.pop().dispose();
+      }
+      while (views.length < sources.length) {
+        const copy = material.clone();
+        materials.push(copy); unbindProjection.push(projection?.bind(copy));
+        views.push(createMeshView(object, copy, physics, projection));
+      }
       views.forEach((view, i) => {
         const center = shapes[i].getCenter(new Vector3());
         view.object.position.copy(positions[i]).sub(center);

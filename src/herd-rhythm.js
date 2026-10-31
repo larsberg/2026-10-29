@@ -4,3 +4,5 @@ export const JUMP_BEATS = 1;
 export const CROUCH_BEATS = .8;
 export const HERD_HEADING = -.25;
 export const DEFAULT_JUMP_POWER = 1 / 3;
+export const DEFAULT_SMALL_JUMP_PERCENT = 20;
+export const DEFAULT_HERD_COUNT = 7;

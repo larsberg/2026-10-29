@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { Scene, Vector3 } from 'three';
+import { Quaternion, Scene, Vector3 } from 'three';
 import { initCSG } from '../src/box-union.js';
 import { initPhysics, createPhysics } from '../src/physics.js';
 import { createFaceMetal } from '../src/face-metal.js';
@@ -12,14 +12,14 @@ import { HERD_BPM, JUMP_BEATS } from '../src/herd-rhythm.js';
 import { defaultMeshSetup, mergeMeshSetup } from '../src/mesh-settings.js';
 
 await initCSG(); await initPhysics();
-function fixture(gravity = 18, spread = 2.6, jumpPower = 1, getGroove) {
+function fixture(gravity = 18, spread = 2.6, jumpPower = 1, getGroove, smallJumpPercent = 0) {
   const settings = mergeMeshSetup(defaultMeshSetup(), { rigidBody: { gravity, friction: .55 },
     pipeline: { seed: 732233, initialDiamondDualEnabled: true, hexelateEnabled: true, finalAverageVerticesEnabled: true }, boxes: { spread } });
   const scene = new Scene(), physics = createPhysics(settings.rigidBody), material = createFaceMetal();
   const group = createSculptureGroup(scene, material, physics), ground = createHerdGround(scene, physics, settings.floor);
   group.setSources(createHerdSources(settings.pipeline.seed, settings.boxes.spread), settings);
   const score = createHerdScore(settings.pipeline.seed);
-  const motion = createHerdMotion(physics, group, ground, { jumpPower, getGroove: getGroove ?? score.motionAt });
+  const motion = createHerdMotion(physics, group, ground, { jumpPower, smallJumpPercent, getGroove: getGroove ?? score.motionAt });
   return { settings, physics, group, ground, motion, dispose() { motion.dispose(); group.dispose(); ground.dispose(); material.dispose(); physics.dispose(); } };
 }
 
@@ -182,6 +182,105 @@ test('jump power scales takeoff strength and zero disables both launch and crouc
   assert.ok(heights[1] > 0 && heights[1] < heights[0] * .3, `Lower power must visibly lower the arc: ${heights}`);
 });
 
+for (const gravity of [18, 100]) test(`small beat jumps aim at the herd center without replacing the prepared leaps (gravity ${gravity})`, () => {
+  const { physics, motion, dispose } = fixture(gravity, 2.3, .762, undefined, 20);
+  try {
+    const counts = Array(7).fill(0), bigCounts = Array(7).fill(0), bigBeats = new Set();
+    let raised = false, minRelativeY = 0;
+    for (let tick = 0; tick < 2400; tick++) {
+      physics.step(1 / 120);
+      for (const state of motion.states) {
+        assert.ok(state.rig.positions.every(Number.isFinite));
+        minRelativeY = Math.min(minRelativeY, ...state.supportFeet.map(foot => foot.contact.y / state.bodyLength));
+        if (state.hop.kicks > bigCounts[state.index]) {
+          bigCounts[state.index] = state.hop.kicks;
+          assert.ok(!bigBeats.has(state.hop.lastKick.beat), 'Only the prepared rear body makes a big jump.');
+          bigBeats.add(state.hop.lastKick.beat);
+          assert.ok(state.hop.lastKick.clench > .9);
+        }
+        if (state.hop.smallJumps > counts[state.index]) {
+          counts[state.index] = state.hop.smallJumps;
+          const hop = state.hop.lastSmallJump;
+          assert.equal(hop.beat % JUMP_BEATS, 0);
+          assert.ok(Math.abs(hop.actualBeat - hop.beat) < HERD_BPM / 60 / 120 + 1e-6);
+          assert.ok(Math.abs(hop.power - .762 * .2) < 1e-10);
+          assert.ok(hop.contactY < .06 && hop.feet.length > 0);
+          const center = motion.states.reduce((sum, other) => sum.add(other.supportCenter), new Vector3()).divideScalar(motion.states.length);
+          assert.ok(Math.hypot(hop.target.x - center.x, hop.target.z - center.z) < 1e-6, 'Small hops gather toward the current herd center.');
+          assert.notEqual(state.hop.lastKick?.beat, hop.beat, 'Never give one body both impulses on a beat.');
+          assert.ok(state.legs.every(leg => !leg.plant && !leg.muscle));
+        }
+        if (state.hop.phase === 'flight' && state.hop.lastLaunch.small)
+          raised ||= state.supportCenter.y > state.hop.lastSmallJump.start.y + .05;
+      }
+    }
+    assert.ok(counts.every(count => count > 0), `Each body should join the small jumps: ${counts}`);
+    assert.ok(bigBeats.size > 10, `Small hops must leave room for big jumps: ${bigBeats.size}`);
+    assert.ok(raised, 'Small jumps must physically lift the bodies.');
+    assert.ok(minRelativeY > -.1, `No tunneling during shared beat jumps: ${minRelativeY}`);
+    motion.configure({ smallJumpPercent: 0 });
+    for (let tick = 0; tick < 240; tick++) physics.step(1 / 120);
+    assert.deepEqual(motion.states.map(state => state.hop.smallJumps), counts, 'Zero disables only new small jumps.');
+    assert.equal(motion.jumpPower, .762);
+    motion.reset();
+    assert.ok(motion.states.every(state => state.hop.smallJumps === 0 && state.hop.lastSmallJump === null));
+  } finally { dispose(); }
+});
+
+test('small hops cannot take the next rear jumper or make a forward body take its long jump', () => {
+  const { physics, motion, dispose } = fixture(100, 2.55, .762, undefined, 20);
+  let preparations = 0, smallHops = 0;
+  const previousPhases = Array(7).fill('settle'), counts = Array(7).fill(0);
+  // Observe the exact decision before integration moves the bodies again.
+  const unsubscribe = physics.onBeforeStep(() => {
+    const rear = motion.states.filter(state => !state.rig.dragging && state.supportMass > 0
+      && (!['flight', 'land'].includes(state.hop.phase) || state.hop.lastLaunch?.small))
+      .sort((a, b) => a.supportCenter.dot(motion.direction) - b.supportCenter.dot(motion.direction) || a.index - b.index)[0];
+    for (const state of motion.states) {
+      if (state.hop.phase === 'crouch' && previousPhases[state.index] !== 'crouch') {
+        preparations++;
+        assert.equal(state.index, rear.index, 'Choose the rear body even when it is still recovering from a small hop.');
+      }
+      if (state.hop.smallJumps > counts[state.index]) {
+        smallHops++;
+        assert.notEqual(state.index, rear?.index, 'Keep the next rear jumper out of the small-hop group.');
+      }
+      previousPhases[state.index] = state.hop.phase;
+      counts[state.index] = state.hop.smallJumps;
+    }
+  });
+  try {
+    for (let tick = 0; tick < 1800; tick++) physics.step(1 / 120);
+    assert.ok(preparations > 10 && smallHops > 20);
+  } finally { unsubscribe(); dispose(); }
+});
+
+test('one and eleven bodies rebuild their motion states and keep finite beat-driven jumps', () => {
+  const { physics, group, settings, motion, dispose } = fixture(100, 2.3, .762, undefined, 20);
+  try {
+    for (const count of [1, 11, 1]) {
+      group.setSources(createHerdSources(settings.pipeline.seed, settings.boxes.spread, count), settings);
+      motion.reset();
+      assert.equal(motion.states.length, count);
+      for (let tick = 0; tick < 1200; tick++) {
+        physics.step(1 / 120);
+        for (const state of motion.states) {
+          assert.ok(state.rig.positions.every(Number.isFinite));
+          if (state.hop.lastKick) {
+            const kick = state.hop.lastKick;
+            assert.ok(kick.target.toArray().every(Number.isFinite));
+            assert.ok(Math.abs(kick.target.dot(motion.direction) - kick.front - kick.bodyLength) < 1e-6);
+          }
+        }
+      }
+      assert.equal(physics.entries.length, count * 5 + 1);
+      assert.ok(motion.states.some(state => state.hop.kicks > 0));
+      if (count === 11) assert.ok(motion.states.some(state => state.hop.smallJumps > 0));
+      else assert.equal(motion.states[0].hop.smallJumps, 0, 'The only body retains the long-jump turn.');
+    }
+  } finally { dispose(); }
+});
+
 test('the selected animal physically clenches its connected body before releasing on the beat', () => {
   const { physics, motion, dispose } = fixture(100, 2.3, .679);
   try {
@@ -219,6 +318,72 @@ test('bass accents change physical motion and increase stepping without relying 
   }
   assert.ok(results[1].steps > results[0].steps * 1.1, `The bass should quicken the herd: ${results.map(result => result.steps)}`);
   assert.ok(results[0].positions.some((position, i) => position.distanceTo(results[1].positions[i]) > 1), 'The score changes physical poses, not only bookkeeping.');
+});
+
+test('one harmony chord creates one physical flex and releases its free joints within 200 ms', () => {
+  const poses = [];
+  for (const enabled of [false, true]) {
+    const { physics, motion, dispose } = fixture(100, 2.3, 0, () => ({ bass: 0, kick: 0, energy: 0 }));
+    try {
+      for (let i = 0; i < 240; i++) physics.step(1 / 120);
+      const chord = ['f4', 'a4', 'b4'].map(note => ({ layer: 'keys', beat: 4, gain: .6, note }));
+      motion.triggerHarmony([{ layer: 'hat', beat: 4, gain: .6 }]);
+      assert.equal(motion.harmony.chords, 0);
+      if (enabled) {
+        motion.triggerHarmony(chord);
+        assert.equal(motion.harmony.chords, 1, 'Three notes trigger one gesture.');
+      }
+      let flexed = 0;
+      for (let i = 0; i < 24; i++) {
+        if (enabled && i === 6) motion.triggerHarmony(chord.slice(1));
+        physics.step(1 / 120);
+        for (const state of motion.states) {
+          flexed += state.harmony.active.length;
+          for (const link of state.harmony.active) {
+            assert.ok(!state.legs.some(leg => leg.link === link), 'Walking retains ownership of its leg joints.');
+            assert.equal(state.hop.phase, 'settle');
+          }
+        }
+      }
+      if (enabled) { assert.ok(flexed > 0); assert.equal(motion.harmony.chords, 1, 'Late chord notes must not retrigger the flex.'); }
+      else assert.equal(flexed, 0);
+      poses.push(motion.states.flatMap(state => state.entries.map(entry => new Quaternion().copy(entry.body.getRotation()).normalize())));
+      assert.equal(motion.harmony.amount, 0);
+      assert.ok(motion.states.every(state => state.harmony.active.length === 0 && state.harmony.amount === 0));
+      assert.equal(physics.entries.length, 36);
+      motion.reset(); assert.equal(motion.harmony.chords, 0);
+    } finally { dispose(); }
+  }
+  assert.ok(poses[0].some((rotation, i) => rotation.angleTo(poses[1][i]) > .01), 'Harmony must move the physical bodies, not just a visual parameter.');
+});
+
+test('harmony gestures yield to jumping, landing and grabbing while the herd stays finite', () => {
+  const { physics, motion, dispose } = fixture(100, 2.3, .679);
+  try {
+    let flexed = false, jumped = false;
+    for (let frame = 0; frame < 600; frame++) {
+      if (frame % 30 === 0) motion.triggerHarmony(['f4', 'a4', 'b4'].map(note => ({ layer: 'keys', beat: frame / 30, gain: .6, note })));
+      const grabbed = motion.states[0];
+      if (frame === 120) {
+        const foot = grabbed.supportFeet[0];
+        grabbed.rig.beginDrag(foot.entry, new Vector3().copy(foot.entry.body.getWorldCenterOfMass()));
+      }
+      if (frame === 180) grabbed.rig.endDrag();
+      physics.step(1 / 60);
+      for (const state of motion.states) {
+        assert.ok(state.rig.positions.every(Number.isFinite));
+        flexed ||= state.harmony.active.length > 0;
+        if (state.rig.dragging || state.hop.phase !== 'settle') {
+          assert.equal(state.harmony.active.length, 0);
+          assert.equal(state.harmony.amount, 0);
+        }
+        if (state.hop.lastKick) { jumped = true; assert.ok(state.hop.lastKick.clench > .9); }
+      }
+    }
+    assert.ok(flexed && jumped);
+    motion.reset();
+    assert.ok(motion.states.every(state => state.harmony.active.length === 0));
+  } finally { dispose(); }
 });
 
 test('all seven shuffle and bump their neighbors even when jump force is zero', () => {

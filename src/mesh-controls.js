@@ -48,7 +48,7 @@ export function meshControlsMarkup() {
             ${fields('herd')}
             <p class="camera-hint">0 stops new jumps; 1 is the original full force. The herd keeps shuffling between jumps.</p>
             <p class="control-heading">Box union</p>
-            <p class="camera-hint">Seven blobs, each made from five random boxes with its own seed. The saved herd seed reproduces all seven shapes. New variation generates a new herd.</p>
+            <p class="camera-hint">Each blob is made from five random boxes with its own seed. The saved herd seed reproduces every shape. New variation generates a new herd.</p>
             <div class="camera-controls">${fieldMarkup('pipeline', meshFields.pipeline.find(([key]) => key === 'seed'))}</div>
             ${fields('boxes')}
             <button type="button" data-mesh-action="randomize">New variation</button>
@@ -66,11 +66,11 @@ export function meshControlsMarkup() {
               <p class="face-sides camera-hint"></p>
             </details>
             <p class="control-heading">Physics</p>
-            <p class="camera-hint">The herd shuffles and nudges together. Every kick cues a rear blob to clench and jump. Change the tempo in Audio; the rhythm continues when muted. Grab a blob to interrupt its turn. Pause stops the herd; Reset restores its seeded formation.</p>
+            <p class="camera-hint">Every kick cues a rear blob to clench and jump. Other grounded blobs hop toward the herd center with Small jump force, as a percentage of Jump force; set it to 0 to stop the small hops. Harmony chords flex the free body joints. Change the tempo in Audio; the rhythm continues when muted. Grab a blob to interrupt its turn. Pause stops the herd; Reset restores its seeded formation.</p>
             ${fieldMarkup('visibility', meshFields.visibility.find(([key]) => key === 'colliders'))}
             ${fields('rigidBody')}
             <p class="control-heading">Mesh operations</p>
-            <p class="camera-hint">Operations affect all seven sculptures. Drag a sculpture to grab it; drag empty space to orbit.</p>
+            <p class="camera-hint">Operations affect all sculptures. Drag a sculpture to grab it; drag empty space to orbit.</p>
             <div class="field-actions"><button type="button" data-mesh-action="triangulate">Triangulate faces</button><button type="button" data-mesh-action="smooth">Smooth mesh</button><button type="button" data-mesh-action="undo" disabled>Undo</button></div>
             <p class="control-heading">Dual mesh</p>
             <div class="field-actions"><button type="button" data-mesh-action="dualDiamond">Dialate / Diamond</button><button type="button" data-mesh-action="hexelate">Hexelate</button></div>

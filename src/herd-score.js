@@ -14,17 +14,40 @@ export function herdAudioSettings() {
   return { enabled: true, bpm: HERD_BPM, volume: .55, drums: .7, bass: .92, keys: .72, melody: .4, instruments };
 }
 
-// A two-minute arrangement at 128 BPM: a deep, steady low pulse under small
-// chamber-pop chord stabs and a playful plucked-key question/answer motif.
+// Six minutes at 128 BPM. The notes stay the same; parts leave and return in
+// different orders. Keep a kick on every beat to retain the herd's jump cues.
+export const HERD_LOOP_BARS = 192;
+const section = (start, end, name, energy, kick, bass, snare, hat, keys, melody) =>
+  ({ start, end, name, energy, levels: { kick, bass, snare, hat, keys, melody } });
 const sections = [
-  { start: 0, end: 8, name: 'Gather', energy: .65 },
-  { start: 8, end: 24, name: 'Romp', energy: .9 },
-  { start: 24, end: 32, name: 'Lift', energy: 1 },
-  { start: 32, end: 40, name: 'Prowl', energy: .5 },
-  { start: 40, end: 56, name: 'Full romp', energy: 1 },
-  { start: 56, end: 64, name: 'Turnaround', energy: .8 },
+  //                                      Energy Kick Bass Snare Hat Keys Lead
+  section(  0,   6, 'Gather',                 .65, 1,   1,   0,   .4,  0,   0),
+  section(  6,  16, 'Gather · chords in',      .9,  1,   1,   .5,  .65, .65, 0),
+  section( 16,  24, 'First romp',             .9,  1,   1,   .85, .8,  .85, .65),
+  section( 24,  32, 'First romp · open',       1,   1,   1,   1,   1,   1,   1),
+  section( 32,  40, 'First romp · answers',    .9,  1,   1,   .8,  .8,  .7,  1),
+  section( 40,  48, 'Unravel · lead out',      .65, .85, .9,  .65, .6,  .8,  0),
+  section( 48,  56, 'Unravel · drums thin',    .45, .7,  .75, 0,   .4,  .7,  0),
+  section( 56,  64, 'Keys & space',            .25, .55, 0,   0,   0,   .85, 0),
+  section( 64,  72, 'Keys & space · answers',  .35, .55, 0,   0,   0,   .75, .6),
+  section( 72,  80, 'Rebuild · hats first',    .45, .65, 0,   0,   .65, .65, .5),
+  section( 80,  88, 'Rebuild · bass returns',  .7,  .85, .9,  .55, .8,  .75, 0),
+  section( 88,  96, 'Rebuild · lead returns',  .9,  1,   1,   .85, 1,   .8,  .8),
+  section( 96, 104, 'Full romp',              1,   1,   1,   1,   1,   1,   1),
+  section(104, 112, 'Full romp · drum pocket', .95, 1,   1,   1,   1,   0,   .8),
+  section(112, 120, 'Full romp · all in',      1,   1,   1,   1,   1,   1,   1),
+  section(120, 128, 'Low room',               .35, .7,  .9,  0,   0,   0,   0),
+  section(128, 136, 'Low room · rim answers',  .5,  .8,  1,   .6,  0,   0,   0),
+  section(136, 144, 'Melody & air',           .5,  .6,  0,   0,   .6,  .6,  1),
+  section(144, 152, 'Melody & air · harmony', .6,  .7,  0,   .5,  .7,  1,   .8),
+  section(152, 160, 'Last build · bass first', .6,  .85, 1,   0,   0,   .6,  0),
+  section(160, 168, 'Last build · percussion', .8,  .95, 1,   .8,  .8,  .6,  0),
+  section(168, 176, 'Last build · lead',       .95, 1,   1,   1,   1,   .85, 1),
+  section(176, 184, 'Peak',                   1,   1,   1,   1,   1,   1,   1),
+  section(184, 188, 'Turnaround · peel away',  .65, .8,  1,   .6,  .6,  .6,  0),
+  section(188, 192, 'Turnaround · low pulse',  .65, 1,   1,   0,   .4,  0,   0),
 ];
-const sectionAt = cycle => sections.find(section => ((Math.floor(cycle) % 64) + 64) % 64 < section.end);
+const sectionAt = cycle => sections.find(section => ((Math.floor(cycle) % HERD_LOOP_BARS) + HERD_LOOP_BARS) % HERD_LOOP_BARS < section.end);
 const harmony = [
   { bass: 'd1', chord: ['f4', 'a4', 'b4'], tune: ['d5', 'a4', 'f5', 'e5'] }, // D minor 6
   { bass: 'f1', chord: ['e4', 'a4', 'c5'], tune: ['c5', 'a4', 'e5', 'g5'] }, // F major 7
@@ -32,18 +55,21 @@ const harmony = [
   { bass: 'a1', chord: ['g4', 'a4', 'c#5'], tune: ['e5', 'c#5', 'a4', 'c#5'] }, // A7, then home
 ];
 
-// Randomness depends on seed + absolute bar, never scheduler query order.
+// Randomness depends on seed + bar within the loop, never scheduler query order.
 // Audio and physical motion read these same events, with no per-frame FFT.
 export function createHerdScore(seed = 1) {
   const cache = new Map();
   function eventsAt(bar) {
     if (cache.has(bar)) return cache.get(bar);
-    const random = createSeededRandom((seed + Math.imul(bar, 104729) + 65537) >>> 0), events = [];
-    const section = sectionAt(bar), energy = section.energy, local = bar % 64;
+    const local = bar % HERD_LOOP_BARS;
+    const random = createSeededRandom((seed + Math.imul(local, 104729) + 65537) >>> 0), events = [];
+    const section = sectionAt(bar), energy = section.energy;
     const add = (layer, step, gain, extra = {}, length = 1) => {
+      const level = section.levels[layer];
+      if (level === 0) return;
       const whole = new TimeSpan(`${bar * 16 + step}/16`, `${bar * 16 + step + length}/16`);
       events.push({ whole, beat: bar * 4 + step / 4, duration: length / 4,
-        value: { layer, s: layer === 'hat' ? 'hh' : layer, gain,
+        value: { layer, s: layer === 'hat' ? 'hh' : layer, gain: gain * level,
           timbreSeed: Math.floor(random() * 0xffffffff), ...extra } });
     };
     const phrase = harmony[Math.floor(local / 2) % harmony.length];
@@ -61,16 +87,16 @@ export function createHerdScore(seed = 1) {
       add('hat', 15, .2 + random() * .1);
       if (random() < .65) add('snare', 11, .18);
     }
-    // Light, clipped chord answers leave the deep downbeats open. Thin out
-    // the middle section, then bring the toy-like melody back for the return.
-    for (const step of section.name === 'Prowl' ? [12] : [4, 12]) {
+    // Reuse the same chord voicings and melody notes; sparse passages leave
+    // only the later chord answer and the opening notes of each melody phrase.
+    for (const step of energy < .5 ? [12] : [4, 12]) {
       for (const note of phrase.chord) add('keys', step, .48 + energy * .12 + random() * .04,
-        { note, clip: .65, detune: -3, wow: .3 }, section.name === 'Prowl' ? 3 : 2);
+        { note, clip: .65, detune: -3, wow: .3 }, energy < .5 ? 3 : 2);
     }
-    if (section.name !== 'Prowl' || bar % 2 === 1) {
+    if (section.levels.melody > 0) {
       const steps = bar % 2 === 0 ? [2, 7, 10] : [2, 6, 11, 14];
       for (const [index, step] of steps.entries()) {
-        if (local < 4 && index > 1) continue;
+        if (energy < .6 && index > 1) continue;
         add('melody', step, .4 + random() * .09,
           { note: phrase.tune[(index + bar % 2) % phrase.tune.length], clip: .7, detune: 2, wow: .25 }, 1);
       }
@@ -91,6 +117,7 @@ export function createHerdScore(seed = 1) {
     return result;
   });
   pattern.title = 'Herd · Night romp';
+  pattern.loopBars = HERD_LOOP_BARS;
   pattern.sectionAt = sectionAt;
   pattern.motionAt = beat => {
     const bar = Math.max(0, Math.floor(beat / 4)), section = sectionAt(bar);

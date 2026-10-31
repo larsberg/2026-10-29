@@ -108,3 +108,25 @@ test('jump power defaults to one-third, migrates old saves, and preserves its en
   }
   for (const jumpPower of [-.1, 1.01, NaN, '0.3']) assert.throws(() => mergeMeshSetup(setup, { herd: { jumpPower } }));
 });
+
+test('small jump percentage defaults to 20, migrates existing herd settings, and roundtrips its range', () => {
+  const setup = defaultMeshSetup();
+  assert.equal(setup.herd.smallJumpPercent, 20);
+  const old = structuredClone(setup); delete old.herd.smallJumpPercent; old.herd.jumpPower = .762;
+  assert.deepEqual(validateMeshSetup(old).herd, { count: 7, jumpPower: .762, smallJumpPercent: 20 });
+  for (const smallJumpPercent of [0, 20, 100]) {
+    const saved = mergeMeshSetup(setup, { herd: { smallJumpPercent } });
+    assert.equal(validateMeshSetup(JSON.parse(JSON.stringify(saved))).herd.smallJumpPercent, smallJumpPercent);
+  }
+  for (const smallJumpPercent of [-1, 101, NaN, '20']) assert.throws(() => mergeMeshSetup(setup, { herd: { smallJumpPercent } }));
+});
+
+test('body count migrates to seven and saves integer counts from one to eleven', () => {
+  const setup = defaultMeshSetup(), old = structuredClone(setup); delete old.herd.count;
+  assert.equal(setup.herd.count, 7); assert.equal(validateMeshSetup(old).herd.count, 7);
+  for (const count of [1, 7, 11]) {
+    const saved = mergeMeshSetup(setup, { herd: { count } });
+    assert.equal(validateMeshSetup(JSON.parse(JSON.stringify(saved))).herd.count, count);
+  }
+  for (const count of [0, 12, 2.5, NaN, '7']) assert.throws(() => mergeMeshSetup(setup, { herd: { count } }));
+});
