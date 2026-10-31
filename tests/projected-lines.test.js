@@ -65,50 +65,51 @@ test('only seed and palette-color edits upload the nearest-sampled texture', () 
   } finally { projection.dispose(); }
 });
 
-test('hi-hat offsets animate for 50 ms with signed speed and no tail afterward', () => {
+test('each harmony chord advances the shared offset once over 250 ms with signed speed', () => {
   const settings = { ...defaultProjectedLines(), offset: .3 };
   const projection = createProjectedLines(settings), offset = () => projection.uniforms.projectedLineOffset.value;
+  const chord = beat => ['f4', 'a4', 'b4'].map(note => ({ layer: 'keys', beat, note }));
   try {
     const version = projection.texture.version;
-    projection.updateMotion(.1, ['kick', 'bass', 'snare', 'keys', 'melody'].map(layer => ({ layer })));
-    assert.equal(offset(), .3, 'Only the hi-hat advances the texture.');
-    projection.updateMotion(0, [{ layer: 'hat' }]);
-    assert.equal(offset(), .3, 'A hit starts an animation without an immediate jump.');
-    projection.updateMotion(.025, []);
-    assert.ok(Math.abs(offset() - .425) < 1e-12, 'Half the increment is applied after 25 ms.');
-    projection.updateMotion(.024, []);
-    assert.ok(offset() < .55, 'The animation is still in progress at 49 ms.');
+    projection.updateMotion(.1, ['kick', 'bass', 'snare', 'hat', 'melody'].map(layer => ({ layer, beat: 0 })));
+    assert.equal(offset(), .3, 'Only harmony advances the texture.');
+    projection.updateMotion(0, chord(4));
+    assert.equal(offset(), .3, 'A chord starts an animation without an immediate jump.');
+    projection.updateMotion(.125, chord(4).slice(1));
+    assert.ok(Math.abs(offset() - .425) < 1e-12, 'At 125 ms the chord has applied half one increment, even if its notes arrive across frames.');
+    projection.updateMotion(.124, []);
+    assert.ok(offset() < .55, 'The animation is still in progress at 249 ms.');
     projection.updateMotion(.001, []);
-    assert.equal(offset(), .55, 'The full increment is applied at 50 ms.');
+    assert.equal(offset(), .55, 'The full increment is applied at 250 ms.');
     for (let i = 0; i < 120; i++) projection.updateMotion(1 / 120, []);
-    assert.equal(offset(), .55, 'There is no motion after the 50 ms animation.');
+    assert.equal(offset(), .55, 'There is no tail after the 250 ms animation.');
     projection.configure({ ...settings, offset: .6 });
     assert.equal(offset(), .85, 'Manual edits preserve the musical contribution.');
     projection.configure({ ...settings, offset: .6, offsetSpeed: -.125 });
     assert.equal(offset(), .85, 'Changing speed does not change the existing position.');
-    projection.updateMotion(0, [{ layer: 'hat' }]);
-    projection.updateMotion(.05, []);
+    projection.updateMotion(0, chord(8));
+    projection.updateMotion(.25, []);
     assert.equal(offset(), .725, 'Negative speed reverses each increment.');
     projection.configure({ ...settings, offset: .6, offsetSpeed: 0 });
-    projection.updateMotion(0, [{ layer: 'hat' }, { layer: 'hat' }]);
-    projection.updateMotion(.05, []);
+    projection.updateMotion(0, [...chord(12), ...chord(16)]);
+    projection.updateMotion(.25, []);
     assert.equal(offset(), .725, 'Zero speed holds the offset.');
     projection.configure({ ...settings, offset: .6, offsetSpeed: .001 });
-    projection.updateMotion(0, [{ layer: 'hat' }]);
-    projection.updateMotion(.05, []);
+    projection.updateMotion(0, chord(20));
+    projection.updateMotion(.25, []);
     assert.ok(Math.abs(offset() - .726) < 1e-12);
     assert.equal(projection.texture.version, version);
     projection.configure({ ...settings, offset: .6 });
     for (const fps of [60, 120]) {
       projection.resetMotion();
-      projection.updateMotion(0, [{ layer: 'hat' }]);
-      for (let frame = 0; frame < fps * .05; frame++) projection.updateMotion(1 / fps, []);
-      assert.ok(Math.abs(offset() - .85) < 1e-12, 'Duration is independent of frame rate.');
+      projection.updateMotion(0, chord(4));
+      for (let frame = 0; frame < fps * .25; frame++) projection.updateMotion(1 / fps, []);
+      assert.ok(Math.abs(offset() - .85) < 1e-12, 'Duration is independent of frame rate, and Reset allows the same opening chord again.');
     }
     projection.resetMotion();
     assert.equal(offset(), .6);
-    projection.updateMotion(0, Array.from({ length: 65 }, () => ({ layer: 'hat' })));
-    projection.updateMotion(.05, []);
+    projection.updateMotion(0, Array.from({ length: 65 }, (_, beat) => chord(beat)).flat());
+    projection.updateMotion(.25, []);
     assert.ok(Math.abs(offset() - .85) < 1e-12, 'The accumulated offset wraps seamlessly through the 16-band repeat.');
   } finally { projection.dispose(); }
 });
@@ -180,13 +181,13 @@ test('body texture coordinates capture original center distance and survive phys
     }
     for (const shader of shaders.slice(0, 7)) assert.match(shader.vertexShader, /vProjectedLineDistance = projectedLineRestDistance/);
     projection.configure({ ...settings.lines, offset: .3 });
-    projection.updateMotion(0, [{ layer: 'hat' }]);
-    projection.updateMotion(.025, []);
-    for (const shader of shaders.slice(0, 7)) {
+    projection.updateMotion(0, [{ layer: 'keys', beat: 4 }]);
+    projection.updateMotion(.125, []);
+    for (const shader of shaders) {
       assert.equal(shader.uniforms.projectedLineOffset, projection.uniforms.projectedLineOffset);
       assert.ok(shader.uniforms.projectedLineOffset.value > .3);
     }
-    assert.equal(shaders.at(-1).uniforms.projectedLineOffset, undefined, 'Ground ignores both manual and musical offsets.');
+    assert.equal(shaders.at(-1).uniforms.projectedLineOffset, projection.uniforms.projectedLineOffset, 'Ground shares the exact body offset uniform.');
     assert.equal(new Set(shaders.slice(0, 7).map(shader => shader.uniforms.dualCorners.value)).size, 7,
       'Each body still has independent animated polygon normals.');
     const previous = group.surfaces[0].geometry.attributes.projectedLineRestDistance;

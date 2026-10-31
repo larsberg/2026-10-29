@@ -3,7 +3,7 @@ import { createSeededRandom } from './mesh-layers.js';
 import { defaultStudioColors, studioColorFields, studioColorKey } from './studio-palettes.js';
 
 export const PROJECTED_LINE_COUNT = 16;
-const HAT_OFFSET_DURATION = .05;
+const CHORD_OFFSET_DURATION = .25;
 
 export const projectedLineFields = [
   ['enabled', 'Use line texture', true],
@@ -35,7 +35,7 @@ export function createProjectedLines(settings = defaultProjectedLines(), environ
   };
   let textureKey, palette = environment;
   let baseOffset = 0, animatedOffset = 0, offsetSpeed = settings.offsetSpeed;
-  let offsetFrom = 0, offsetTarget = 0, offsetElapsed = HAT_OFFSET_DURATION;
+  let offsetFrom = 0, offsetTarget = 0, offsetElapsed = CHORD_OFFSET_DURATION, lastChordBeat;
   const applyOffset = () => { uniforms.projectedLineOffset.value = (baseOffset + animatedOffset) % PROJECTED_LINE_COUNT; };
   function configure(value, nextPalette = palette) {
     palette = nextPalette;
@@ -54,9 +54,12 @@ export function createProjectedLines(settings = defaultProjectedLines(), environ
     uniforms.projectedLineStrength.value = value.enabled ? value.strength : 0;
   }
   function updateMotion(dt, events) {
-    offsetElapsed = Math.min(HAT_OFFSET_DURATION, offsetElapsed + Math.max(0, dt));
-    animatedOffset = offsetFrom + (offsetTarget - offsetFrom) * (offsetElapsed / HAT_OFFSET_DURATION);
-    for (const event of events) if (event.layer === 'hat' && offsetSpeed !== 0) {
+    offsetElapsed = Math.min(CHORD_OFFSET_DURATION, offsetElapsed + Math.max(0, dt));
+    animatedOffset = offsetFrom + (offsetTarget - offsetFrom) * (offsetElapsed / CHORD_OFFSET_DURATION);
+    for (const event of events) if (event.layer === 'keys' && event.beat !== lastChordBeat) {
+      // The notes of one chord share an onset, including across frame batches.
+      lastChordBeat = event.beat;
+      if (offsetSpeed === 0) continue;
       offsetFrom = animatedOffset;
       offsetTarget += offsetSpeed;
       offsetElapsed = 0;
@@ -65,7 +68,7 @@ export function createProjectedLines(settings = defaultProjectedLines(), environ
   }
   function resetMotion() {
     animatedOffset = offsetFrom = offsetTarget = 0;
-    offsetElapsed = HAT_OFFSET_DURATION; applyOffset();
+    offsetElapsed = CHORD_OFFSET_DURATION; lastChordBeat = undefined; applyOffset();
   }
   function bind(material, { fixedOffset } = {}) {
     const previousCompile = material.onBeforeCompile, previousKey = material.customProgramCacheKey;

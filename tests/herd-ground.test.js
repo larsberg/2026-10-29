@@ -40,7 +40,7 @@ test('ground uses one XZ mass centroid per body and updates existing uniforms as
   } finally { dispose(); }
 });
 
-test('concentric ground bands share the palette and spacing while retaining lighting and ignoring audio offsets', () => {
+test('concentric ground bands share the palette, spacing and chord offset while retaining lighting', () => {
   const { settings, ground, shader, projection, physics, dispose } = fixture();
   try {
     assert.equal(ground.mesh.receiveShadow, true);
@@ -48,14 +48,16 @@ test('concentric ground bands share the palette and spacing while retaining ligh
     assert.equal(ground.mesh.material.envMap, null);
     assert.equal(shader.uniforms.projectedLineMap.value, projection.texture);
     assert.equal(shader.uniforms.projectedLineStrength, projection.uniforms.projectedLineStrength);
-    assert.equal(shader.uniforms.projectedLineOffset, undefined);
+    assert.equal(shader.uniforms.projectedLineOffset, projection.uniforms.projectedLineOffset);
     for (const [angle, tilt] of [[0, 0], [47, -12], [-145, 75]]) {
       projection.configure({ ...settings.lines, spacing: 2, angle, tilt, offset: .7 });
       assert.equal(shader.uniforms.projectedLineScale.value, .5, 'Legacy angle and tilt settings do not affect radial spacing.');
     }
-    projection.updateMotion(0, [{ layer: 'hat' }]); projection.updateMotion(.05, []);
-    assert.ok(projection.uniforms.projectedLineOffset.value > .7);
-    assert.doesNotMatch(shader.fragmentShader, /projectedLineOffset/);
+    projection.updateMotion(0, [{ layer: 'keys', beat: 4 }]); projection.updateMotion(.125, []);
+    assert.ok(Math.abs(shader.uniforms.projectedLineOffset.value - .825) < 1e-12, 'The floor receives the same half-completed chord transition.');
+    projection.updateMotion(.125, []);
+    assert.ok(Math.abs(shader.uniforms.projectedLineOffset.value - .95) < 1e-12);
+    assert.match(shader.fragmentShader, /sqrt\(nearestSquared\) \* projectedLineScale \+ projectedLineOffset/);
     assert.match(shader.fragmentShader, /nearestSquared = min\(nearestSquared, dot\(delta, delta\)\)/);
     assert.equal(physics.entries.length, 1, 'The floor keeps its original single static collider.');
   } finally { dispose(); }

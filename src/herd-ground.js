@@ -12,6 +12,7 @@ export function createHerdGround(scene, physics, settings, projection) {
     material.onBeforeCompile = shader => {
       shader.uniforms.projectedLineMap = projection.uniforms.projectedLineMap;
       shader.uniforms.projectedLineScale = projection.uniforms.projectedLineScale;
+      shader.uniforms.projectedLineOffset = projection.uniforms.projectedLineOffset;
       shader.uniforms.projectedLineStrength = projection.uniforms.projectedLineStrength;
       shader.uniforms.groundCentroids = { value: centroids };
       shader.uniforms.groundCentroidCount = sourceCount;
@@ -22,7 +23,7 @@ export function createHerdGround(scene, physics, settings, projection) {
       `);
       shader.fragmentShader = `
         uniform sampler2D projectedLineMap;
-        uniform float projectedLineScale, projectedLineStrength;
+        uniform float projectedLineScale, projectedLineOffset, projectedLineStrength;
         uniform vec2 groundCentroids[${MAX_CENTROIDS}];
         uniform int groundCentroidCount;
         varying vec2 vGroundPosition;
@@ -37,13 +38,13 @@ export function createHerdGround(scene, physics, settings, projection) {
             nearestSquared = min(nearestSquared, dot(delta, delta));
           }
           // Point SDF (zero-radius circles): one square root after the union.
-          float coordinate = sqrt(nearestSquared) * projectedLineScale;
+          float coordinate = sqrt(nearestSquared) * projectedLineScale + projectedLineOffset;
           vec3 pattern = texture2D(projectedLineMap, vec2(coordinate / ${PROJECTED_LINE_COUNT.toFixed(1)}, 0.5)).rgb;
           diffuseColor.rgb = mix(diffuseColor.rgb, pattern, projectedLineStrength);
         }
       `);
     };
-    material.customProgramCacheKey = () => 'herd-centroid-distance-field-v1';
+    material.customProgramCacheKey = () => 'herd-centroid-distance-field-v2';
   }
   const mesh = new Mesh(new PlaneGeometry(2000, 2000), material);
   mesh.name = 'Herd ground'; mesh.rotation.x = -Math.PI / 2; mesh.position.y = GROUND_Y;

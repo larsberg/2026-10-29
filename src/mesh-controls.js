@@ -90,7 +90,7 @@ export function meshControlsMarkup() {
           </section>
           <section id="panel-materials" role="tabpanel" aria-labelledby="tab-materials" hidden>
             <details class="material-group" open><summary>Distance lines</summary>
-              <p class="camera-hint">Body bands use each vertex's original distance from its body center. Hi-hat hits shift them over 50 ms; Offset speed sets the amount per hit. Ground rings follow the live body centers and ignore the offset. Line spacing sets band width. Choose the palette in Lighting.</p>
+              <p class="camera-hint">Body bands use each vertex's original distance from its body center. Harmony chords shift the bodies and ground together over 250 ms; Offset speed sets the amount per chord. Ground rings follow the live body centers. Line spacing sets band width. Choose the palette in Lighting.</p>
               ${meshFields.lines.filter(([key]) => !['angle', 'tilt'].includes(key)).map(field => fieldMarkup('lines', field)).join('')}
               <button type="button" class="shuffle-lines">Shuffle line colors</button>
             </details>
