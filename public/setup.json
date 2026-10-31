@@ -29,7 +29,7 @@
   "lighting": {
     "spotlight": {
       "enabled": true,
-      "color": "#f2f4fa",
+      "color": "#d4faff",
       "intensity": 2400,
       "offsetX": -3,
       "height": 26,
@@ -43,7 +43,7 @@
     },
     "directional": {
       "enabled": false,
-      "color": "#f2f4fa",
+      "color": "#d4faff",
       "intensity": 2.6,
       "offsetX": -3,
       "height": 7,
@@ -55,8 +55,8 @@
     },
     "hemisphere": {
       "enabled": false,
-      "skyColor": "#c4d1e5",
-      "groundColor": "#292e38",
+      "skyColor": "#a3e9ff",
+      "groundColor": "#1d3d55",
       "intensity": 0.29,
       "yaw": 0,
       "tilt": 0
@@ -65,14 +65,14 @@
       "enabled": true,
       "intensity": 1,
       "rotation": 0,
-      "backgroundColor": "#080b12",
-      "keyColor": "#485568",
-      "stripColor": "#526881",
-      "fillColor": "#919baa",
-      "rimColor": "#9daec8",
-      "accentColor": "#c8c0b6",
-      "bounceColor": "#c3ccd7",
-      "backColor": "#ffffff"
+      "backgroundColor": "#071823",
+      "keyColor": "#2164cc",
+      "stripColor": "#54728f",
+      "fillColor": "#889fda",
+      "rimColor": "#7bcae5",
+      "accentColor": "#a8e6ed",
+      "bounceColor": "#6affdf",
+      "backColor": "#f0ffff"
     },
     "occlusion": {
       "enabled": true,
@@ -158,7 +158,7 @@
     "angle": 47,
     "tilt": 45,
     "offset": 0,
-    "offsetSpeed": -0.411,
+    "offsetSpeed": -0.763,
     "strength": 1,
     "seed": 3
   },
@@ -287,7 +287,7 @@
   },
   "fog": {
     "enabled": false,
-    "color": "#080b12",
+    "color": "#071823",
     "near": 10,
     "far": 30
   },
@@ -300,9 +300,9 @@
     "follow": true,
     "optimizedTextures": false,
     "followSmoothing": 0.45,
-    "yaw": -148.4987204694,
-    "elevation": 29.8967782817,
-    "distance": 53.6503125547,
+    "yaw": 107.9932969681,
+    "elevation": 5,
+    "distance": 29.6066208274,
     "offsetX": 0,
     "offsetY": 0,
     "offsetZ": 0,

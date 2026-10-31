@@ -24,7 +24,7 @@ function fixture(gravity = 18, spread = 2.6, jumpPower = 1, getGroove, smallJump
 }
 
 for (const [gravity, spread] of [[18, 2.6], [100, 2]]) test(`seven rear-to-front somersaults stay rhythmic and grounded at takeoff (gravity ${gravity})`, () => {
-  const { physics, group, motion, dispose } = fixture(gravity, spread);
+  const { physics, group, ground, motion, dispose } = fixture(gravity, spread);
   try {
     const start = group.getCenter(new Vector3()), baseJoints = physics.joints.length;
     const counts = Array(7).fill(0), clearance = Array(7).fill(0), lands = Array(7).fill(0), kickBeats = [];
@@ -34,6 +34,7 @@ for (const [gravity, spread] of [[18, 2.6], [100, 2]]) test(`seven rear-to-front
       const projections = motion.states.map(state => state.supportCenter.dot(motion.direction));
       maxSpan = Math.max(maxSpan, Math.max(...projections) - Math.min(...projections));
       for (const [i, state] of motion.states.entries()) {
+        for (const leg of state.legs) if (leg.plant) assert.equal(leg.plant.a, ground.anchor, 'Foot plants stay fixed when the floor follows.');
         clearance[i] = Math.max(clearance[i], Math.min(...state.supportFeet.map(foot => foot.contact.y)));
         minRelativeY = Math.min(minRelativeY, ...state.supportFeet.map(foot => foot.contact.y / state.bodyLength));
         assert.ok(state.rig.positions.every(Number.isFinite));
@@ -67,7 +68,7 @@ for (const [gravity, spread] of [[18, 2.6], [100, 2]]) test(`seven rear-to-front
     assert.ok(minRelativeY > -.08, `No body should tunnel through the ground: ${minRelativeY}`);
     assert.ok(maxSpan < 65, `The herd should stay together: ${maxSpan}`);
     assert.ok(group.getCenter(new Vector3()).sub(start).dot(motion.direction) > 20);
-    assert.equal(physics.entries.length, 36); motion.reset(); assert.equal(physics.joints.length, baseJoints);
+    assert.equal(physics.entries.length, 37); motion.reset(); assert.equal(physics.joints.length, baseJoints);
   } finally { dispose(); }
 });
 
@@ -143,7 +144,7 @@ test('rebuilding a crouching herd removes old foot anchors and safely binds the 
       assert.ok(crouched);
       const oldEntries = group.views.flatMap(view => view.rig.entries);
       group.setSources(createHerdSources(settings.pipeline.seed + cycle + 1, settings.boxes.spread), settings);
-      assert.equal(physics.entries.length, 36);
+      assert.equal(physics.entries.length, 37);
       assert.ok(physics.joints.every(joint => !oldEntries.includes(joint.a) && !oldEntries.includes(joint.b)));
       physics.step(1 / 120);
       motion.states.forEach((state, i) => assert.equal(state.rig, group.views[i].rig));
@@ -273,7 +274,7 @@ test('one and eleven bodies rebuild their motion states and keep finite beat-dri
           }
         }
       }
-      assert.equal(physics.entries.length, count * 5 + 1);
+      assert.equal(physics.entries.length, count * 5 + 2);
       assert.ok(motion.states.some(state => state.hop.kicks > 0));
       if (count === 11) assert.ok(motion.states.some(state => state.hop.smallJumps > 0));
       else assert.equal(motion.states[0].hop.smallJumps, 0, 'The only body retains the long-jump turn.');
@@ -350,7 +351,7 @@ test('one harmony chord creates one physical flex and releases its free joints w
       poses.push(motion.states.flatMap(state => state.entries.map(entry => new Quaternion().copy(entry.body.getRotation()).normalize())));
       assert.equal(motion.harmony.amount, 0);
       assert.ok(motion.states.every(state => state.harmony.active.length === 0 && state.harmony.amount === 0));
-      assert.equal(physics.entries.length, 36);
+      assert.equal(physics.entries.length, 37);
       motion.reset(); assert.equal(motion.harmony.chords, 0);
     } finally { dispose(); }
   }

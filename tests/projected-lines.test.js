@@ -65,7 +65,7 @@ test('only seed and palette-color edits upload the nearest-sampled texture', () 
   } finally { projection.dispose(); }
 });
 
-test('each harmony chord advances the shared offset once over 250 ms with signed speed', () => {
+test('each harmony chord advances the shared offset at 4× signed speed over 250 ms', () => {
   const settings = { ...defaultProjectedLines(), offset: .3 };
   const projection = createProjectedLines(settings), offset = () => projection.uniforms.projectedLineOffset.value;
   const chord = beat => ['f4', 'a4', 'b4'].map(note => ({ layer: 'keys', beat, note }));
@@ -76,41 +76,41 @@ test('each harmony chord advances the shared offset once over 250 ms with signed
     projection.updateMotion(0, chord(4));
     assert.equal(offset(), .3, 'A chord starts an animation without an immediate jump.');
     projection.updateMotion(.125, chord(4).slice(1));
-    assert.ok(Math.abs(offset() - .425) < 1e-12, 'At 125 ms the chord has applied half one increment, even if its notes arrive across frames.');
+    assert.ok(Math.abs(offset() - .8) < 1e-12, 'At 125 ms the chord has applied half one increment, even if its notes arrive across frames.');
     projection.updateMotion(.124, []);
-    assert.ok(offset() < .55, 'The animation is still in progress at 249 ms.');
+    assert.ok(offset() < 1.3, 'The animation is still in progress at 249 ms.');
     projection.updateMotion(.001, []);
-    assert.equal(offset(), .55, 'The full increment is applied at 250 ms.');
+    assert.equal(offset(), 1.3, 'The full increment is applied at 250 ms.');
     for (let i = 0; i < 120; i++) projection.updateMotion(1 / 120, []);
-    assert.equal(offset(), .55, 'There is no tail after the 250 ms animation.');
+    assert.equal(offset(), 1.3, 'There is no tail after the 250 ms animation.');
     projection.configure({ ...settings, offset: .6 });
-    assert.equal(offset(), .85, 'Manual edits preserve the musical contribution.');
+    assert.equal(offset(), 1.6, 'Manual edits preserve the musical contribution.');
     projection.configure({ ...settings, offset: .6, offsetSpeed: -.125 });
-    assert.equal(offset(), .85, 'Changing speed does not change the existing position.');
+    assert.equal(offset(), 1.6, 'Changing speed does not change the existing position.');
     projection.updateMotion(0, chord(8));
     projection.updateMotion(.25, []);
-    assert.equal(offset(), .725, 'Negative speed reverses each increment.');
+    assert.equal(offset(), 1.1, 'Negative speed reverses each increment.');
     projection.configure({ ...settings, offset: .6, offsetSpeed: 0 });
     projection.updateMotion(0, [...chord(12), ...chord(16)]);
     projection.updateMotion(.25, []);
-    assert.equal(offset(), .725, 'Zero speed holds the offset.');
+    assert.equal(offset(), 1.1, 'Zero speed holds the offset.');
     projection.configure({ ...settings, offset: .6, offsetSpeed: .001 });
     projection.updateMotion(0, chord(20));
     projection.updateMotion(.25, []);
-    assert.ok(Math.abs(offset() - .726) < 1e-12);
+    assert.ok(Math.abs(offset() - 1.104) < 1e-12);
     assert.equal(projection.texture.version, version);
     projection.configure({ ...settings, offset: .6 });
     for (const fps of [60, 120]) {
       projection.resetMotion();
       projection.updateMotion(0, chord(4));
       for (let frame = 0; frame < fps * .25; frame++) projection.updateMotion(1 / fps, []);
-      assert.ok(Math.abs(offset() - .85) < 1e-12, 'Duration is independent of frame rate, and Reset allows the same opening chord again.');
+      assert.ok(Math.abs(offset() - 1.6) < 1e-12, 'Duration is independent of frame rate, and Reset allows the same opening chord again.');
     }
     projection.resetMotion();
     assert.equal(offset(), .6);
     projection.updateMotion(0, Array.from({ length: 65 }, (_, beat) => chord(beat)).flat());
     projection.updateMotion(.25, []);
-    assert.ok(Math.abs(offset() - .85) < 1e-12, 'The accumulated offset wraps seamlessly through the 16-band repeat.');
+    assert.ok(Math.abs(offset() - 1.6) < 1e-12, 'The accumulated offset wraps seamlessly through the 16-band repeat.');
   } finally { projection.dispose(); }
 });
 

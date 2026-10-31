@@ -53,8 +53,7 @@ export function createMeshView(scene, sharedSurfaceMaterial, physics, projection
       bounds.copy(surface.mesh.boundingBox);
     });
     if (projection) {
-      // Capture distance to this body's original mass centroid, using the
-      // same center definition as the ground's live centroid field.
+      // Capture distance to this body's original mass centroid before motion.
       let mass = 0; point.set(0, 0, 0);
       for (const { body } of rig?.entries ?? []) {
         const weight = body.getMass(); mass += weight;

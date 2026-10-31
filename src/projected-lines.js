@@ -4,6 +4,7 @@ import { defaultStudioColors, studioColorFields, studioColorKey } from './studio
 
 export const PROJECTED_LINE_COUNT = 16;
 const CHORD_OFFSET_DURATION = .25;
+const CHORD_OFFSET_MULTIPLIER = 4;
 
 export const projectedLineFields = [
   ['enabled', 'Use line texture', true],
@@ -61,7 +62,7 @@ export function createProjectedLines(settings = defaultProjectedLines(), environ
       lastChordBeat = event.beat;
       if (offsetSpeed === 0) continue;
       offsetFrom = animatedOffset;
-      offsetTarget += offsetSpeed;
+      offsetTarget += offsetSpeed * CHORD_OFFSET_MULTIPLIER;
       offsetElapsed = 0;
     }
     applyOffset();

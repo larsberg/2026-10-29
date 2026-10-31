@@ -394,8 +394,8 @@ export function createHerdMotion(physics, group, ground, { getBeat, getGroove, b
         if ((!stance || !grounded) && leg.plant) { physics.removeJoint(leg.plant); leg.plant = null; }
         if (stance && !grounded) { release(state, leg); leg.phase = .62; continue; }
         if (stance && ground && !leg.plant) {
-          leg.plant = physics.addMotorJoint(ground.entry, leg.foot.entry, {
-            localFrameA: { position: ground.entry.body.getLocalPoint(point.copy(leg.foot.contact).setY(0)) },
+          leg.plant = physics.addMotorJoint(ground.anchor, leg.foot.entry, {
+            localFrameA: { position: ground.anchor.body.getLocalPoint(point.copy(leg.foot.contact).setY(0)) },
             localFrameB: { position: leg.foot.entry.body.getLocalPoint(leg.foot.contact) },
             linearHertz: 18, linearDampingRatio: 1,
             maxSpringForce: state.mass * muscleGravity * 1.5,
