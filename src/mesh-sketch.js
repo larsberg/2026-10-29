@@ -78,7 +78,7 @@ export async function mountMesh(root,{ui=false}={}) {
   herdMotion=createHerdMotion(physics,views,ground,{getBeat:()=>marchAudio.beat,getGroove:beat=>marchAudio.readMotion(beat),jumpPower:settings.herd.jumpPower});
   let scoreSeed=settings.pipeline.seed;
   const recording=bindRecordingControls(shell,renderer.domElement,marchAudio);
-  const paletteMotion=createStudioPaletteMotion({environment,scene,sun,hemisphere,spotlight,lighting:settings.lighting});
+  const paletteMotion=createStudioPaletteMotion({environment,scene,renderer,sun,hemisphere,spotlight,lighting:settings.lighting});
   const setupAbort=new AbortController(),followTarget=new THREE.Vector3(),worldOrigin=new THREE.Vector3();
   const groupCenter=()=>views.getCenter(followTarget);
   const cameraFollow=createCameraFollow(groupCenter()),follow=cameraFollow.position;

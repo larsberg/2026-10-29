@@ -1,4 +1,4 @@
-import { studioColorFields } from './studio-palettes.js';
+import { studioColorFields, migrateStudioColors } from './studio-palettes.js';
 
 // Shared by the drawer and setup API so ranges and saved values agree.
 export const lightingGroups = [
@@ -73,5 +73,6 @@ export function validateLighting(value) {
       result[key][name] = typeof field === "string" ? field.toLowerCase() : field;
     }
   }
+  result.environment = migrateStudioColors(result.environment);
   return result;
 }

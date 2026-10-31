@@ -29,7 +29,7 @@
   "lighting": {
     "spotlight": {
       "enabled": true,
-      "color": "#ffd5bc",
+      "color": "#f2f4fa",
       "intensity": 2400,
       "offsetX": -3,
       "height": 26,
@@ -43,7 +43,7 @@
     },
     "directional": {
       "enabled": false,
-      "color": "#ffd5bc",
+      "color": "#f2f4fa",
       "intensity": 2.6,
       "offsetX": -3,
       "height": 7,
@@ -55,8 +55,8 @@
     },
     "hemisphere": {
       "enabled": false,
-      "skyColor": "#8bc7ff",
-      "groundColor": "#51303b",
+      "skyColor": "#c4d1e5",
+      "groundColor": "#292e38",
       "intensity": 0.29,
       "yaw": 0,
       "tilt": 0
@@ -65,14 +65,14 @@
       "enabled": true,
       "intensity": 1,
       "rotation": 0,
-      "backgroundColor": "#160e1b",
-      "keyColor": "#ffad83",
-      "stripColor": "#fff1df",
-      "fillColor": "#147aff",
-      "rimColor": "#5ed5ff",
-      "accentColor": "#d997aa",
-      "bounceColor": "#ffac8c",
-      "backColor": "#a99cb7"
+      "backgroundColor": "#080b12",
+      "keyColor": "#485568",
+      "stripColor": "#526881",
+      "fillColor": "#919baa",
+      "rimColor": "#9daec8",
+      "accentColor": "#c8c0b6",
+      "bounceColor": "#c3ccd7",
+      "backColor": "#ffffff"
     },
     "occlusion": {
       "enabled": true,
@@ -154,7 +154,7 @@
   },
   "lines": {
     "enabled": true,
-    "spacing": 7.55,
+    "spacing": 7.65,
     "angle": 27,
     "tilt": 69,
     "offset": 0,
@@ -163,7 +163,7 @@
     "seed": 1
   },
   "boxes": {
-    "spread": 2.3
+    "spread": 2.55
   },
   "pipeline": {
     "enabled": true,
@@ -250,7 +250,7 @@
       },
       "keys": {
         "sound": "electric",
-        "level": 1,
+        "level": 0.38,
         "decay": 0.62,
         "cutoff": 4300,
         "resonance": 0.45,
@@ -262,15 +262,15 @@
       },
       "melody": {
         "sound": "pluck",
-        "level": 0.72,
+        "level": 0.65,
         "decay": 0.7,
         "cutoff": 3600,
         "resonance": 0.45,
         "drive": 0,
         "reverb": 0.2,
-        "delay": 0,
+        "delay": 0.14,
         "delayBeats": 0.5,
-        "feedback": 0.3
+        "feedback": 0.42
       }
     }
   },
@@ -285,7 +285,7 @@
   },
   "fog": {
     "enabled": false,
-    "color": "#160e1b",
+    "color": "#080b12",
     "near": 10,
     "far": 30
   },
