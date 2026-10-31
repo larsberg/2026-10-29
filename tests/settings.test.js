@@ -22,7 +22,7 @@ test('local Save/Reload roundtrips mesh settings and rejects invalid writes atom
     const setup=mergeMeshSetup(defaultMeshSetup(),{pipeline:{seed:42,insetScale:.75,triangulateEnabled:false,faceCenterDualEnabled:false,averageVerticesEnabled:false,insetEnabled:false,excludeInitialBorderTriangles:false},rigidBody:{gravity:780.5,friction:1.25},appearance:{wireframeColor:'#aabbcc'},camera:{yaw:30},audio:{bpm:128}});
     assert.equal((await request('PUT',setup)).statusCode,200);
     assert.deepEqual((await request('GET')).body,setup);
-    const editedSetup=mergeMeshSetup(setup,{pipeline:{hexelateEnabled:false,insetScale:.25},materials:{mesh:{normalMix:.8,roughness:.6,color:'#aabbcc'}},visibility:{surface:true,wireframe:true}});
+    const editedSetup=mergeMeshSetup(setup,{pipeline:{hexelateEnabled:false,insetScale:.25},materials:{mesh:{normalMix:.8,roughness:.6,color:'#aabbcc'}},visibility:{surface:true,wireframe:true},lines:{spacing:2.5,angle:20,seed:16384}});
     assert.equal((await request('PUT',editedSetup)).statusCode,200);
     assert.deepEqual((await request('GET')).body,editedSetup);
     assert.equal((await request('PUT',{...setup,pipeline:{...setup.pipeline,insetScale:0}})).statusCode,400);

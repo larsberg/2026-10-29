@@ -9,8 +9,10 @@ import { herdAudioSettings } from './herd-score.js';
 import { rigidBodyFields, validateRigidBody } from './rigid-body-settings.js';
 import { boxFields } from './box-settings.js';
 import { DEFAULT_JUMP_POWER } from './herd-rhythm.js';
+import { projectedLineFields } from './projected-lines.js';
 
 export const meshFields = {
+  lines: projectedLineFields,
   boxes: boxFields,
   pipeline: [
     ['enabled', 'Apply operation layers', true],
@@ -46,10 +48,10 @@ export const meshFields = {
     ['wireframeColor', 'Wireframe color', '#ffffff'],
   ],
   floor: [
-    ['roughness', 'Tile roughness', 0.52, 0.02, 1, 0.01],
+    ['roughness', 'Ground roughness', 0.52, 0.02, 1, 0.01],
     ['depth', 'Tile depth', 0, 0, 0.12, 0.001],
     ['tileSize', 'Tile size', 2, 0.5, 5, 0.1],
-    ['color', 'Tile color', '#3c6c85'],
+    ['color', 'Ground color', '#3c6c85'],
   ],
   fog: [
     ['enabled', 'Enable fog', true],
@@ -104,10 +106,13 @@ export function validateMeshSetup(value) {
   const result = defaultMeshSetup();
   // Retain the shared editing controls when loading a partial older setup.
   value = { ...value,
+    lines: value.lines === undefined ? result.lines : value.lines,
     boxes: value.boxes === undefined ? result.boxes : value.boxes,
     herd: value.herd === undefined ? result.herd : value.herd,
     pipeline: value.pipeline === undefined ? result.pipeline : value.pipeline,
     rigidBody:validateRigidBody(value.rigidBody) };
+  if (value.lines && value.lines.seed === undefined) value.lines = { ...value.lines, seed: result.lines.seed };
+  if (value.lines && value.lines.offsetSpeed === undefined) value.lines = { ...value.lines, offsetSpeed: result.lines.offsetSpeed };
   if (value.visibility && value.visibility.surface === undefined) value.visibility = { ...value.visibility, surface: result.visibility.surface };
   if (value.visibility && value.visibility.colliders === undefined) value.visibility = { ...value.visibility, colliders: result.visibility.colliders };
   if (value.pipeline && typeof value.pipeline === 'object') value.pipeline = {

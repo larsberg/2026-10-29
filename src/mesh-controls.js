@@ -17,7 +17,7 @@ function fieldMarkup(group, [key, label, initial, min, max, step]) {
   const id = `${group}-${key}`, data = `data-group="${group}" data-key="${key}"`;
   if (typeof initial === 'boolean') return `<label class="lighting-toggle"><input id="${id}" ${data} type="checkbox">${label}</label>`;
   if (typeof initial === 'string') return `<label class="color-label" for="${id}">${label}<output></output><input id="${id}" ${data} type="color"></label>`;
-  if (group === 'camera' || group === 'infoLayout' || (group === 'pipeline' && key === 'seed')) return `<label for="${id}">${label}<input id="${id}" ${data} type="number" min="${min}" max="${max}" step="${step}"></label>`;
+  if (group === 'camera' || group === 'infoLayout' || (['pipeline', 'lines'].includes(group) && key === 'seed')) return `<label for="${id}">${label}<input id="${id}" ${data} type="number" min="${min}" max="${max}" step="${step}"></label>`;
   return `<label class="slider-label" for="${id}">${label}<output></output></label><input id="${id}" ${data} type="range" min="${min}" max="${max}" step="${step}">`;
 }
 
@@ -89,6 +89,14 @@ export function meshControlsMarkup() {
             ${instrumentControlsMarkup()}
           </section>
           <section id="panel-materials" role="tabpanel" aria-labelledby="tab-materials" hidden>
+            <details class="material-group" open><summary>Projected lines</summary>
+              <p class="camera-hint">Hi-hat hits shift the pattern on the bodies over 50 ms. Offset speed sets the amount per hit: negative reverses direction; zero stops it. The ground stays fixed. Choose the palette in Lighting.</p>
+              ${fields('lines')}
+              <button type="button" class="shuffle-lines">Shuffle line colors</button>
+            </details>
+            <details class="material-group"><summary>Ground finish</summary>
+              ${meshFields.floor.filter(([key]) => ['roughness', 'color'].includes(key)).map(field => fieldMarkup('floor', field)).join('')}
+            </details>
             <p class="control-heading">Wireframe overlay</p>
             <label class="lighting-toggle"><input id="materials-wireframe-visible" data-group="visibility" data-key="wireframe" type="checkbox">Show wireframe overlay</label>
             ${fields('appearance')}
@@ -157,6 +165,10 @@ export function bindMeshControls(shell, { ui, change, playPause, reset, resetCam
     });
   });
   for (const button of shell.querySelectorAll('[data-mesh-action]')) button.addEventListener('click', () => meshAction(button.dataset.meshAction));
+  query('.shuffle-lines').addEventListener('click', () => {
+    const seed = (Number(query('#lines-seed').value) + 1 + Math.floor(Math.random() * 1000000)) % 1000001;
+    change({ lines: { seed } });
+  });
   const inputs = [...shell.querySelectorAll('input[data-group]')];
   const instruments = bindInstrumentControls(shell, change);
   for (const input of inputs) input.addEventListener('input', () => {

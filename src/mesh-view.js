@@ -6,7 +6,7 @@ import { Box3, BufferGeometry, DoubleSide, Float32BufferAttribute, LineBasicMate
 import { polygonEdges } from './polygon-mesh.js';
 import { averageVertices, dualDiamond, dualNSided, triangulateFaces, validatePolygonMesh } from './mesh-operations.js';
 
-export function createMeshView(scene, sharedSurfaceMaterial, physics) {
+export function createMeshView(scene, sharedSurfaceMaterial, physics, projection) {
   const surfaceMaterial = sharedSurfaceMaterial ?? createFaceMetal(); surfaceMaterial.side = DoubleSide;
   surfaceMaterial.polygonOffset = true; surfaceMaterial.polygonOffsetFactor = surfaceMaterial.polygonOffsetUnits = 1;
   let surface, rig, bindingSource, deformedPositions, wireframeDirty = false;
@@ -47,6 +47,7 @@ export function createMeshView(scene, sharedSurfaceMaterial, physics) {
     topology = next; edges = nextEdges;
     deformedPositions = undefined; wireframeDirty = false;
     surface = createMeshSurface(next, surfaceMaterial, { skinned: !!(physics && bindingSource) }); object.add(surface.mesh);
+    projection?.capture(surface.mesh);
     surface.mesh.visible = configured?.visibility.surface !== false;
     if (physics && bindingSource) rig = createBoxRig(bindingSource, next, surface, physics, positions => {
       deformedPositions = positions; wireframeDirty = true; updateWireframe();

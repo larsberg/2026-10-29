@@ -3,10 +3,10 @@
   "sketch": "2026-10-29",
   "materials": {
     "mesh": {
-      "metalness": 0.48,
-      "roughness": 0.48,
+      "metalness": 0,
+      "roughness": 0.8,
       "emissiveIntensity": 0,
-      "envMapIntensity": 1,
+      "envMapIntensity": 0.45,
       "opacity": 1,
       "color": "#ffffff",
       "emissive": "#ffffff",
@@ -29,7 +29,7 @@
   "lighting": {
     "spotlight": {
       "enabled": true,
-      "color": "#ffdbb4",
+      "color": "#ffd5bc",
       "intensity": 2400,
       "offsetX": -3,
       "height": 26,
@@ -43,7 +43,7 @@
     },
     "directional": {
       "enabled": false,
-      "color": "#ffdbb4",
+      "color": "#ffd5bc",
       "intensity": 2.6,
       "offsetX": -3,
       "height": 7,
@@ -55,8 +55,8 @@
     },
     "hemisphere": {
       "enabled": false,
-      "skyColor": "#80ddd9",
-      "groundColor": "#4e302b",
+      "skyColor": "#8bc7ff",
+      "groundColor": "#51303b",
       "intensity": 0.29,
       "yaw": 0,
       "tilt": 0
@@ -65,14 +65,14 @@
       "enabled": true,
       "intensity": 1,
       "rotation": 0,
-      "backgroundColor": "#101c20",
-      "keyColor": "#ff914e",
-      "stripColor": "#fff0d6",
-      "fillColor": "#087f8c",
-      "rimColor": "#51d4cc",
-      "accentColor": "#d3584b",
-      "bounceColor": "#e1ac69",
-      "backColor": "#4c6f78"
+      "backgroundColor": "#160e1b",
+      "keyColor": "#ffad83",
+      "stripColor": "#fff1df",
+      "fillColor": "#147aff",
+      "rimColor": "#5ed5ff",
+      "accentColor": "#d997aa",
+      "bounceColor": "#ffac8c",
+      "backColor": "#a99cb7"
     },
     "occlusion": {
       "enabled": true,
@@ -151,6 +151,16 @@
         }
       ]
     }
+  },
+  "lines": {
+    "enabled": true,
+    "spacing": 7.55,
+    "angle": 27,
+    "tilt": 69,
+    "offset": 0,
+    "offsetSpeed": 0.096,
+    "strength": 1,
+    "seed": 1
   },
   "boxes": {
     "spread": 2.3
@@ -268,14 +278,14 @@
     "wireframeColor": "#ffffff"
   },
   "floor": {
-    "roughness": 0.02,
+    "roughness": 0.85,
     "depth": 0.004,
     "tileSize": 4.6,
     "color": "#ffffff"
   },
   "fog": {
     "enabled": false,
-    "color": "#101c20",
+    "color": "#160e1b",
     "near": 10,
     "far": 30
   },
@@ -288,9 +298,9 @@
     "follow": true,
     "optimizedTextures": false,
     "followSmoothing": 0.45,
-    "yaw": 45.100943517,
-    "elevation": 25.6170946456,
-    "distance": 62,
+    "yaw": 152.8366826446,
+    "elevation": 5.102054429,
+    "distance": 35.2836992521,
     "offsetX": 0,
     "offsetY": 0,
     "offsetZ": 0,

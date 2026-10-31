@@ -10,12 +10,13 @@ export function createHerdSources(seed, spread) {
   return Array.from({ length: SCULPTURE_COUNT }, (_, i) => createBoxUnion((seed + i * 104729) % 1000001, spread));
 }
 
-export function createSculptureGroup(scene, material, physics) {
+export function createSculptureGroup(scene, material, physics, projection) {
   const object = new Group(); object.name = 'Seven CSG sculptures'; scene.add(object);
   // Each skin needs its own polygon-normal texture uniforms. Keep the material
   // controls shared, but give each copy an independent material/shader binding.
   const materials = Array.from({ length: SCULPTURE_COUNT }, () => material.clone());
-  const views = materials.map(value => createMeshView(object, value, physics));
+  const unbindProjection = materials.map(value => projection?.bind(value));
+  const views = materials.map(value => createMeshView(object, value, physics, projection));
   const primary = views[0], bounds = new Box3(), childBounds = new Box3();
   let activeRig, sources = [];
   const rig = {
@@ -103,7 +104,7 @@ export function createSculptureGroup(scene, material, physics) {
       return views.map((view, i) => view.triangulate(ids, { ...options,
         ...(seed === undefined ? {} : { random: createSeededRandom((seed + i * 104729) % 1000001) }) }))[0];
     },
-    dispose() { rig.endDrag(); views.forEach(view => view.dispose()); materials.forEach(value => value.dispose()); object.removeFromParent(); },
+    dispose() { rig.endDrag(); views.forEach(view => view.dispose()); unbindProjection.forEach(unbind => unbind?.()); materials.forEach(value => value.dispose()); object.removeFromParent(); },
   };
   for (const method of ['dualDiamond', 'hexelate', 'dualNSided', 'smooth', 'undo']) {
     group[method] = (...args) => {

@@ -8,7 +8,7 @@ export function lightingControlsMarkup() {
       <select id="studio-palette"><option value="custom" disabled>Custom</option>${studioPalettes.map(p => `<option value="${p.id}">${p.label}</option>`).join('')}</select>
       <button type="button" class="palette-next" aria-label="Next palette" title="Next palette">→</button>
     </span></div>
-    <p class="camera-hint">Palettes color the reflection studio, scene background, and lights. Automatic palette changes are off; manual changes retain 0.3-second fades. Studio background also sets the fog color. Edit colors below to make a custom palette; Save retains it.</p>
+    <p class="camera-hint">Palettes color the projected lines, reflection studio, scene background, and lights. Automatic palette changes are off; manual lighting changes retain 0.3-second fades. Studio background also sets the fog color. Edit colors below to make a custom palette; Save retains it.</p>
     ` + lightingGroups.map(({ key, label, fields }, index) => `
     <details class="material-group" ${index === 0 ? "open" : ""}>
       <summary>${label}</summary>

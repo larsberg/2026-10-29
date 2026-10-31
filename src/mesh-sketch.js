@@ -3,6 +3,7 @@ import { createHerdSources, createSculptureGroup } from './sculpture-group.js';
 import { createHerdGround, GROUND_Y } from './herd-ground.js';
 import { createHerdMotion } from './herd-motion.js';
 import { createHerdScore } from './herd-score.js';
+import { createProjectedLines } from './projected-lines.js';
 import { initPhysics, createPhysics } from './physics.js';
 import { bindColliderDrag } from './collider-drag.js';
 import { initCSG } from './box-union.js';
@@ -61,8 +62,9 @@ export async function mountMesh(root,{ui=false}={}) {
   const sun=new THREE.DirectionalLight('#fff5dc',3.3);sun.position.set(-3,7,4);sun.castShadow=true;sun.shadow.mapSize.set(2048,2048);Object.assign(sun.shadow.camera,{left:-6,right:6,top:7,bottom:-5,near:0.5,far:100});sun.shadow.bias=-0.0003;sun.shadow.normalBias=0.025;sun.shadow.radius=3;scene.add(sun,sun.target);
   const spotlight=new THREE.SpotLight();spotlight.name='Following spotlight';spotlight.castShadow=true;spotlight.shadow.mapSize.set(2048,2048);spotlight.shadow.camera.near=.1;spotlight.shadow.camera.far=100;scene.add(spotlight,spotlight.target);
   const meshMaterial=createFaceMetal();meshMaterial.envMap=environment.texture;
-  const views=createSculptureGroup(scene,meshMaterial,physics);
-  const ground=createHerdGround(scene,physics,settings.floor);
+  const lineProjection=createProjectedLines(settings.lines,settings.lighting.environment);
+  const views=createSculptureGroup(scene,meshMaterial,physics,lineProjection);
+  const ground=createHerdGround(scene,physics,settings.floor,lineProjection);
   let herdMotion;
   const textProp=createTextProp(Math.min(4,renderer.capabilities.getMaxAnisotropy()),1024);
   textProp.material.envMap=environment.texture;
@@ -87,6 +89,7 @@ export async function mountMesh(root,{ui=false}={}) {
   lightingControls=bindLightingControls(shell,sun,hemisphere,{mesh:meshMaterial,text:textProp.material},materialControls.get,markChanged,effects.configure,
     lighting=>{
       paletteMotion.configure(lighting);
+      lineProjection.configure(settings.lines,lighting.environment);
       settings.fog.color=lighting.environment.backgroundColor;panel?.set(settings,'fog');
       meshMaterial.envMap=textProp.material.envMap=environment.texture;
       views.configure(settings);
@@ -118,6 +121,7 @@ export async function mountMesh(root,{ui=false}={}) {
     const cameraChanged=restoringView||followChanged||['yaw','elevation','distance','offsetX','offsetY','offsetZ'].some(key=>next.camera[key]!==currentCamera[key]);
     const meshChanged=next.boxes.spread!==settings.boxes.spread||JSON.stringify(next.pipeline)!==JSON.stringify(settings.pipeline);
     settings=next;
+    lineProjection.configure(settings.lines,settings.lighting.environment);
     physics.configure(settings.rigidBody);
     herdMotion.configure(settings.herd);
     ground.configure(settings.floor);
@@ -215,7 +219,7 @@ export async function mountMesh(root,{ui=false}={}) {
     if(boxUnions?.[0].seed!==settings.pipeline.seed||boxUnions?.[0].spread!==settings.boxes.spread)boxUnions=createHerdSources(settings.pipeline.seed,settings.boxes.spread);
     views.setSources(boxUnions,settings);
     if(scoreSeed!==settings.pipeline.seed){scoreSeed=settings.pipeline.seed;void marchAudio.setPattern(createHerdScore(scoreSeed));}
-    marchAudio.restart();herdMotion.reset(settings.pipeline.seed);
+    marchAudio.restart();herdMotion.reset(settings.pipeline.seed);lineProjection.resetMotion();
     dirty=true;syncMeshStatus();
     // Keep the saved orbit centered on the installed surface.
     if(settings.camera.follow){
@@ -253,7 +257,10 @@ export async function mountMesh(root,{ui=false}={}) {
       syncMeshStatus();dirty=false;statsTime=time;
     }
     colliderDrag.update();
-    if(running&&!setupBusy)physics.step(dt);
+    if(running&&!setupBusy){
+      physics.step(dt);
+      lineProjection.updateMotion(dt,marchAudio.drainEvents());
+    }
     cameraFollow.update(camera,controls,groupCenter(),settings.camera.follow,followSuspended(),dt,settings.camera.followSmoothing);
     controls.update();
     paletteMotion.update(dt);
@@ -264,9 +271,9 @@ export async function mountMesh(root,{ui=false}={}) {
   const thumbnailCapture = import.meta.env.DEV ? bindThumbnailCapture(shell, renderer.domElement, renderScene) : null;
   const api={play,pause(){focus.cancelResume();pause();},reset,setup:apply,getSetup,saveSetup,loadSetup,getState:()=>({running,audio:marchAudio.playing,faces:views.views.reduce((sum,view)=>sum+(view.topology?.faces.length??0),0)}),
     editMesh:meshAction,audio:marchAudio,setComposition(pattern){return marchAudio.setPattern(pattern);},paletteMotion,scene,
-    get mesh(){return views;},get boxUnion(){return boxUnions?.[0];},get boxUnions(){return boxUnions;},ground,herdMotion,environment,physics,renderer,camera,controls,recording:recording.recorder,render(){physics.sync();renderScene();},
+    get mesh(){return views;},get boxUnion(){return boxUnions?.[0];},get boxUnions(){return boxUnions;},ground,herdMotion,lineProjection,environment,physics,renderer,camera,controls,recording:recording.recorder,render(){physics.sync();renderScene();},
     dispose(){disposed=true;startup.dispose();renderer.setAnimationLoop(null);setupAbort.abort();colliderDrag.dispose();unbindAudio();recording.dispose();marchAudio.dispose();focus.dispose();resize.disconnect();controls.removeEventListener('start',startOrbit);controls.removeEventListener('end',endOrbit);controls.dispose();panel.dispose();infoControls.dispose();thumbnailCapture?.dispose(); effects.dispose();stats?.dom.remove();
-      herdMotion.dispose();views.dispose();ground.dispose();physics.dispose();meshMaterial.dispose();
+      herdMotion.dispose();views.dispose();ground.dispose();lineProjection.dispose();physics.dispose();meshMaterial.dispose();
       const geometries=new Set(),materials=new Set();scene.traverse(object=>{if(object.geometry)geometries.add(object.geometry);if(object.material)materials.add(object.material);});
       geometries.delete(textProp.mesh.geometry);materials.delete(textProp.material);textProp.dispose();geometries.forEach(g=>g.dispose());materials.forEach(m=>m.dispose());environment.dispose();sun.shadow.dispose();spotlight.shadow.dispose();renderer.dispose();shell.remove();if(window.__meshSketch===api)delete window.__meshSketch;
     }};
