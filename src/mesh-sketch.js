@@ -70,7 +70,7 @@ export async function mountMesh(root,{ui=false}={}) {
   textProp.material.envMap=environment.texture;
   textProp.mesh.rotation.x=-Math.PI/2;textProp.mesh.position.set(0,GROUND_Y+.02,0);scene.add(textProp.mesh);
   const effects=createSceneEffects(renderer,scene,camera,{clampBeauty:false});
-  function renderScene(){effects.render();}
+  function renderScene(){ground.updateSources(views.views);effects.render();}
   let running=true,disposed=false,last=0,dirty=true,statsTime=0,frameMs=16.67;
   let panel,lightingControls,stats,focus,colliderDrag,applyingCamera=false,setupBusy=false;
   const audioStatus=shell.querySelector('.march-audio-status');

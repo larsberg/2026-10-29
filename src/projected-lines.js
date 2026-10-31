@@ -1,4 +1,4 @@
-import { DataTexture, Float32BufferAttribute, NearestFilter, RGBAFormat, RepeatWrapping, SRGBColorSpace, UnsignedByteType, Vector3 } from 'three';
+import { Box3, DataTexture, Float32BufferAttribute, NearestFilter, RGBAFormat, RepeatWrapping, SRGBColorSpace, UnsignedByteType, Vector3 } from 'three';
 import { createSeededRandom } from './mesh-layers.js';
 import { defaultStudioColors, studioColorFields, studioColorKey } from './studio-palettes.js';
 
@@ -6,7 +6,7 @@ export const PROJECTED_LINE_COUNT = 16;
 const HAT_OFFSET_DURATION = .05;
 
 export const projectedLineFields = [
-  ['enabled', 'Project lines', true],
+  ['enabled', 'Use line texture', true],
   ['spacing', 'Line spacing', 1.25, .2, 8, .05],
   ['angle', 'Pattern angle °', 35, -180, 180, 1],
   ['tilt', 'Projection tilt °', 25, -75, 75, 1],
@@ -18,18 +18,18 @@ export const projectedLineFields = [
 export const defaultProjectedLines = () => Object.fromEntries(projectedLineFields.map(([key, , value]) => [key, value]));
 
 // One small, unfiltered palette texture serves the floor and every skin. Freeze
-// the original world coordinates once so the pattern travels with deformation.
+// each vertex's distance to its original body center before deformation.
 export function createProjectedLines(settings = defaultProjectedLines(), environment = defaultStudioColors()) {
   const size = PROJECTED_LINE_COUNT, pixels = new Uint8Array(size * 4);
   const texture = new DataTexture(pixels, size, 1, RGBAFormat, UnsignedByteType);
-  texture.name = 'Projected lines · 16 palette bands';
+  texture.name = 'Distance lines · 16 palette bands';
   texture.colorSpace = SRGBColorSpace;
   texture.wrapS = texture.wrapT = RepeatWrapping;
   texture.minFilter = texture.magFilter = NearestFilter;
   texture.generateMipmaps = false;
   const uniforms = {
     projectedLineMap: { value: texture },
-    projectedLineAxis: { value: new Vector3() },
+    projectedLineScale: { value: 1 },
     projectedLineOffset: { value: 0 },
     projectedLineStrength: { value: 1 },
   };
@@ -49,8 +49,7 @@ export function createProjectedLines(settings = defaultProjectedLines(), environ
       }
       texture.needsUpdate = true; textureKey = nextKey;
     }
-    const radians = Math.PI / 180, angle = value.angle * radians;
-    uniforms.projectedLineAxis.value.set(Math.cos(angle), Math.tan(value.tilt * radians), Math.sin(angle)).divideScalar(value.spacing);
+    uniforms.projectedLineScale.value = 1 / value.spacing;
     baseOffset = value.offset; offsetSpeed = value.offsetSpeed; applyOffset();
     uniforms.projectedLineStrength.value = value.enabled ? value.strength : 0;
   }
@@ -76,42 +75,42 @@ export function createProjectedLines(settings = defaultProjectedLines(), environ
       previousCompile.call(this, shader, renderer);
       Object.assign(shader.uniforms, uniforms);
       shader.uniforms.projectedLineOffset = offset;
-      shader.vertexShader = 'attribute vec3 projectedLineRestPosition;\nvarying vec3 vProjectedLinePosition;\n' + shader.vertexShader;
+      shader.vertexShader = 'attribute float projectedLineRestDistance;\nvarying float vProjectedLineDistance;\n' + shader.vertexShader;
       shader.vertexShader = shader.vertexShader.replace('#include <project_vertex>', `
         #include <project_vertex>
-        vProjectedLinePosition = projectedLineRestPosition;
+        vProjectedLineDistance = projectedLineRestDistance;
       `);
       shader.fragmentShader = `
         uniform sampler2D projectedLineMap;
-        uniform vec3 projectedLineAxis;
-        uniform float projectedLineOffset, projectedLineStrength;
-        varying vec3 vProjectedLinePosition;
+        uniform float projectedLineScale, projectedLineOffset, projectedLineStrength;
+        varying float vProjectedLineDistance;
       ` + shader.fragmentShader;
       shader.fragmentShader = shader.fragmentShader.replace('#include <color_fragment>', `
         #include <color_fragment>
         if (projectedLineStrength > 0.0) {
-          float coordinate = dot(vProjectedLinePosition, projectedLineAxis) + projectedLineOffset;
+          float coordinate = vProjectedLineDistance * projectedLineScale + projectedLineOffset;
           vec3 pattern = texture2D(projectedLineMap, vec2(coordinate / ${PROJECTED_LINE_COUNT.toFixed(1)}, 0.5)).rgb;
           diffuseColor.rgb = mix(diffuseColor.rgb, pattern, projectedLineStrength);
         }
       `);
     };
-    material.customProgramCacheKey = () => `${baseKey}:rest-world-palette-lines-v2`;
+    material.customProgramCacheKey = () => `${baseKey}:rest-center-distance-palette-lines-v1`;
     material.needsUpdate = true;
     return () => {
       material.onBeforeCompile = previousCompile; material.customProgramCacheKey = previousKey;
       material.needsUpdate = true;
     };
   }
-  function capture(mesh) {
+  function capture(mesh, worldCenter) {
     mesh.updateWorldMatrix(true, false);
     const position = mesh.geometry.attributes.position;
-    const rest = new Float32BufferAttribute(new Float32Array(position.count * 3), 3), point = new Vector3();
+    const center = worldCenter ?? new Box3().setFromBufferAttribute(position).getCenter(new Vector3()).applyMatrix4(mesh.matrixWorld);
+    const rest = new Float32BufferAttribute(new Float32Array(position.count), 1), point = new Vector3();
     for (let i = 0; i < position.count; i++) {
       point.fromBufferAttribute(position, i).applyMatrix4(mesh.matrixWorld);
-      rest.setXYZ(i, point.x, point.y, point.z);
+      rest.setX(i, point.distanceTo(center));
     }
-    mesh.geometry.setAttribute('projectedLineRestPosition', rest);
+    mesh.geometry.setAttribute('projectedLineRestDistance', rest);
   }
   configure(settings);
   return { texture, uniforms, configure, updateMotion, resetMotion, bind, capture, dispose() { texture.dispose(); } };

@@ -47,12 +47,23 @@ export function createMeshView(scene, sharedSurfaceMaterial, physics, projection
     topology = next; edges = nextEdges;
     deformedPositions = undefined; wireframeDirty = false;
     surface = createMeshSurface(next, surfaceMaterial, { skinned: !!(physics && bindingSource) }); object.add(surface.mesh);
-    projection?.capture(surface.mesh);
     surface.mesh.visible = configured?.visibility.surface !== false;
     if (physics && bindingSource) rig = createBoxRig(bindingSource, next, surface, physics, positions => {
       deformedPositions = positions; wireframeDirty = true; updateWireframe();
       bounds.copy(surface.mesh.boundingBox);
     });
+    if (projection) {
+      // Capture distance to this body's original mass centroid, using the
+      // same center definition as the ground's live centroid field.
+      let mass = 0; point.set(0, 0, 0);
+      for (const { body } of rig?.entries ?? []) {
+        const weight = body.getMass(); mass += weight;
+        point.addScaledVector(body.getWorldCenterOfMass(), weight);
+      }
+      if (mass > 0) point.divideScalar(mass);
+      else { bounds.getCenter(point); object.localToWorld(point); }
+      projection.capture(surface.mesh, point);
+    }
     rig?.setCollidersVisible(configured?.visibility.colliders);
   }
   function operate(operation) {

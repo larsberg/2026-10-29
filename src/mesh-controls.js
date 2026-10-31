@@ -89,9 +89,9 @@ export function meshControlsMarkup() {
             ${instrumentControlsMarkup()}
           </section>
           <section id="panel-materials" role="tabpanel" aria-labelledby="tab-materials" hidden>
-            <details class="material-group" open><summary>Projected lines</summary>
-              <p class="camera-hint">Hi-hat hits shift the pattern on the bodies over 50 ms. Offset speed sets the amount per hit: negative reverses direction; zero stops it. The ground stays fixed. Choose the palette in Lighting.</p>
-              ${fields('lines')}
+            <details class="material-group" open><summary>Distance lines</summary>
+              <p class="camera-hint">Body bands use each vertex's original distance from its body center. Hi-hat hits shift them over 50 ms; Offset speed sets the amount per hit. Ground rings follow the live body centers and ignore the offset. Line spacing sets band width. Choose the palette in Lighting.</p>
+              ${meshFields.lines.filter(([key]) => !['angle', 'tilt'].includes(key)).map(field => fieldMarkup('lines', field)).join('')}
               <button type="button" class="shuffle-lines">Shuffle line colors</button>
             </details>
             <details class="material-group"><summary>Ground finish</summary>

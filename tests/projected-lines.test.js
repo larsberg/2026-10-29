@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { NearestFilter, RepeatWrapping, Scene, ShaderLib, SRGBColorSpace, Vector3 } from 'three';
+import { BufferGeometry, Float32BufferAttribute, Mesh, MeshBasicMaterial, NearestFilter, RepeatWrapping, Scene, ShaderLib, SRGBColorSpace, Vector3 } from 'three';
 import { createProjectedLines, defaultProjectedLines, PROJECTED_LINE_COUNT } from '../src/projected-lines.js';
 import { defaultStudioColors, studioPalettes } from '../src/studio-palettes.js';
 import { createFaceMetal } from '../src/face-metal.js';
@@ -46,7 +46,7 @@ test('only seed and palette-color edits upload the nearest-sampled texture', () 
     const version = texture.version;
     projection.configure({ ...settings, spacing: 2, angle: 0, tilt: 0, offset: .2 });
     assert.equal(texture.version, version);
-    assert.equal(uniforms.projectedLineAxis.value.dot(new Vector3(2, 6, -8)), 1, 'Spacing is measured in original world units.');
+    assert.equal(uniforms.projectedLineScale.value, .5, 'Spacing scales distance in original world units.');
     assert.equal(uniforms.projectedLineOffset.value, .2);
     projection.configure({ ...settings, enabled: false });
     assert.equal(texture.version, version);
@@ -113,7 +113,22 @@ test('hi-hat offsets animate for 50 ms with signed speed and no tail afterward',
   } finally { projection.dispose(); }
 });
 
-test('projection coordinates capture the original world pose and survive physical skinning, edits and shared material copies', () => {
+test('equal radii have equal texture coordinates regardless of axis, body translation, or rotation', () => {
+  const projection = createProjectedLines(), geometry = new BufferGeometry(), material = new MeshBasicMaterial();
+  geometry.setAttribute('position', new Float32BufferAttribute([1, 0, 0, 0, 1, 0, 0, 0, 1, -1, 0, 0, 0, 2, 0, 0, 0, 3], 3));
+  const mesh = new Mesh(geometry, material);
+  try {
+    for (const shift of [0, 17]) {
+      mesh.position.set(shift + 8, 15, -6); mesh.rotation.set(.4, .5 + shift, 1);
+      mesh.updateWorldMatrix(true, false);
+      projection.capture(mesh, mesh.localToWorld(new Vector3()));
+      const distances = geometry.attributes.projectedLineRestDistance;
+      [1, 1, 1, 1, 2, 3].forEach((expected, i) => assert.ok(Math.abs(distances.getX(i) - expected) < 1e-6));
+    }
+  } finally { projection.dispose(); geometry.dispose(); material.dispose(); }
+});
+
+test('body texture coordinates capture original center distance and survive physical skinning and mesh edits', () => {
   const settings = mergeMeshSetup(defaultMeshSetup(), { rigidBody: { gravity: 0 },
     pipeline: { initialDiamondDualEnabled: true, hexelateEnabled: true, finalAverageVerticesEnabled: true } });
   const scene = new Scene(), physics = createPhysics(settings.rigidBody), material = createFaceMetal();
@@ -125,18 +140,25 @@ test('projection coordinates capture the original world pose and survive physica
   };
   const checkOriginal = mesh => {
     mesh.updateWorldMatrix(true, false);
-    const { position, projectedLineRestPosition: rest } = mesh.geometry.attributes;
+    const { position, projectedLineRestDistance: rest } = mesh.geometry.attributes;
     assert.equal(rest.count, position.count);
+    assert.equal(rest.itemSize, 1);
+    const rig = group.views.find(view => view.surface.mesh === mesh).rig;
+    const center = new Vector3(); let mass = 0;
+    for (const { body } of rig.entries) {
+      const weight = body.getMass(); mass += weight; center.addScaledVector(body.getWorldCenterOfMass(), weight);
+    }
+    center.divideScalar(mass);
     for (let i = 0; i < position.count; i++) {
-      const expected = new Vector3().fromBufferAttribute(position, i).applyMatrix4(mesh.matrixWorld);
-      assert.ok(expected.distanceTo(new Vector3().fromBufferAttribute(rest, i)) < 2e-6);
+      const expected = new Vector3().fromBufferAttribute(position, i).applyMatrix4(mesh.matrixWorld).distanceTo(center);
+      assert.ok(Math.abs(expected - rest.getX(i)) < 2e-6);
     }
   };
   try {
     group.object.position.set(2, 0, -3);
     group.setSources(createHerdSources(450725, 2), settings);
-    const meshes = [...group.surfaces, ground.mesh]; meshes.forEach(checkOriginal);
-    const rest = group.surfaces.map(mesh => mesh.geometry.attributes.projectedLineRestPosition);
+    const meshes = [...group.surfaces, ground.mesh]; group.surfaces.forEach(checkOriginal);
+    const rest = group.surfaces.map(mesh => mesh.geometry.attributes.projectedLineRestDistance);
     const copies = rest.map(attribute => attribute.array.slice());
     const versions = rest.map(attribute => attribute.version);
     const initial = group.views.map(view => view.rig.positions.slice());
@@ -148,15 +170,15 @@ test('projection coordinates capture the original world pose and survive physica
     assert.ok(group.views.some((view, i) => view.rig.positions.some((value, j) => Math.abs(value - initial[i][j]) > .1)));
     rest.forEach((attribute, i) => {
       assert.deepEqual(attribute.array, copies[i], 'Deformation must not slide the pattern through the body.');
-      assert.equal(attribute.version, versions[i], 'Rest positions require no per-frame uploads.');
+      assert.equal(attribute.version, versions[i], 'Original distances require no per-frame uploads.');
     });
     group.configure(settings);
     const shaders = meshes.map(compile);
     for (const shader of shaders) {
       assert.equal(shader.uniforms.projectedLineMap.value, projection.texture);
-      assert.equal(shader.uniforms.projectedLineAxis, projection.uniforms.projectedLineAxis);
-      assert.match(shader.vertexShader, /vProjectedLinePosition = projectedLineRestPosition/);
+      assert.equal(shader.uniforms.projectedLineScale, projection.uniforms.projectedLineScale);
     }
+    for (const shader of shaders.slice(0, 7)) assert.match(shader.vertexShader, /vProjectedLineDistance = projectedLineRestDistance/);
     projection.configure({ ...settings.lines, offset: .3 });
     projection.updateMotion(0, [{ layer: 'hat' }]);
     projection.updateMotion(.025, []);
@@ -164,13 +186,12 @@ test('projection coordinates capture the original world pose and survive physica
       assert.equal(shader.uniforms.projectedLineOffset, projection.uniforms.projectedLineOffset);
       assert.ok(shader.uniforms.projectedLineOffset.value > .3);
     }
-    assert.notEqual(shaders.at(-1).uniforms.projectedLineOffset, projection.uniforms.projectedLineOffset);
-    assert.equal(shaders.at(-1).uniforms.projectedLineOffset.value, 0, 'Ground ignores both manual and musical offsets.');
+    assert.equal(shaders.at(-1).uniforms.projectedLineOffset, undefined, 'Ground ignores both manual and musical offsets.');
     assert.equal(new Set(shaders.slice(0, 7).map(shader => shader.uniforms.dualCorners.value)).size, 7,
       'Each body still has independent animated polygon normals.');
-    const previous = group.surfaces[0].geometry.attributes.projectedLineRestPosition;
+    const previous = group.surfaces[0].geometry.attributes.projectedLineRestDistance;
     group.smooth({ iterations: 1, strength: .3 });
-    assert.notEqual(group.surfaces[0].geometry.attributes.projectedLineRestPosition, previous);
+    assert.notEqual(group.surfaces[0].geometry.attributes.projectedLineRestDistance, previous);
     group.surfaces.forEach(mesh => { checkOriginal(mesh); assert.equal(compile(mesh).uniforms.projectedLineMap.value, projection.texture); });
   } finally { group.dispose(); ground.dispose(); projection.dispose(); material.dispose(); physics.dispose(); }
 });

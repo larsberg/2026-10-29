@@ -154,11 +154,11 @@
   },
   "lines": {
     "enabled": true,
-    "spacing": 6.85,
+    "spacing": 1.65,
     "angle": 47,
     "tilt": 45,
     "offset": 0,
-    "offsetSpeed": 0.096,
+    "offsetSpeed": -0.411,
     "strength": 1,
     "seed": 3
   },
@@ -189,7 +189,7 @@
     "friction": 0.55
   },
   "herd": {
-    "count": 8,
+    "count": 7,
     "jumpPower": 0.783,
     "smallJumpPercent": 29
   },
@@ -300,9 +300,9 @@
     "follow": true,
     "optimizedTextures": false,
     "followSmoothing": 0.45,
-    "yaw": 48.1180956446,
-    "elevation": 17.6984861486,
-    "distance": 33.0754570598,
+    "yaw": -148.4987204694,
+    "elevation": 29.8967782817,
+    "distance": 53.6503125547,
     "offsetX": 0,
     "offsetY": 0,
     "offsetZ": 0,
