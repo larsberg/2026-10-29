@@ -133,6 +133,7 @@ export function createMarchAudio({now=()=>performance.now()/1000,canPlay=()=>tru
       return ready;
     },
     get beat(){return clock.beat;},get playing(){return playing;},
+    readMotion(beat = clock.beat){return pattern.motionAt?.(beat);},
     get audioTime(){return context?.currentTime;},
     readBass(){
       const audible=playing&&context?.state==='running'&&settings.volume>0&&settings.bass>0&&instrumentLevel(settings,'bass')>0;

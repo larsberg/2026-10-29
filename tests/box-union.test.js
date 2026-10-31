@@ -37,10 +37,10 @@ function checkClosedSolid(mesh) {
   return volume;
 }
 
-test('seven overlapping random boxes form a centered, closed triangle union across seeds', () => {
+test('five overlapping random boxes form a centered, closed triangle union across seeds', () => {
   for (const seed of [0, 1, 2, 7, 42, 99, 1000000]) {
     const result = createBoxUnion(seed), { mesh, boxes } = result;
-    assert.equal(boxes.length, 7);
+    assert.equal(boxes.length, 5);
     const volume = checkClosedSolid(mesh);
     assert.ok(Math.abs(volume - result.volume) < result.volume * 1e-6);
     const volumes = boxes.map(({ size }) => size.reduce((product, x) => product * x, 1));
@@ -65,7 +65,7 @@ test('spread changes source center spacing without changing box sizes or rotatio
   const original = createBoxUnion(1, 1);
   for (const spread of [0, .5, 2, 4]) {
     const next = createBoxUnion(1, spread);
-    for (let i = 0; i < 7; i++) {
+    for (let i = 0; i < 5; i++) {
       assert.deepEqual(next.boxes[i].size, original.boxes[i].size);
       assert.deepEqual(next.boxes[i].quaternion, original.boxes[i].quaternion);
       // Union recentering moves the common origin; pairwise offsets still scale exactly.

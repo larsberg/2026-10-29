@@ -12,7 +12,10 @@ export function initPhysics() {
 export function createPhysics(value) {
   if (!engine) throw new Error('Initialize Box3D before creating the physics world.');
   let settings = validateRigidBody(value), accumulator = 0, disposed = false;
-  const world = new engine.World({ gravity: { x: 0, y: -settings.gravity, z: 0 }, enableSleep: true, enableContinuous: true });
+  // Firm, damped contacts keep the hopping hulls close to the floor surface
+  // on landing, including at the sketch's stronger gravity settings.
+  const world = new engine.World({ gravity: { x: 0, y: -settings.gravity, z: 0 }, enableSleep: true, enableContinuous: true,
+    contactHertz: 60, contactDampingRatio: 1, contactSpeed: 10 });
   const entries = [], joints = [], syncListeners = new Set(), stepListeners = new Set();
   const position = new Vector3(), rotation = new Quaternion(), parentRotation = new Quaternion();
   const creators = { box: 'createBox', sphere: 'createSphere', capsule: 'createCapsule', hull: 'createHull' };
@@ -83,8 +86,11 @@ export function createPhysics(value) {
       accumulator += Math.min(dt, PHYSICS_STEP * 8);
       let steps = 0;
       while (accumulator + 1e-12 >= PHYSICS_STEP && steps < 8) {
-        for (const listener of stepListeners) listener(PHYSICS_STEP);
-        world.step(PHYSICS_STEP, 4);
+        // Fast launches/landings may request extra solver substeps for this
+        // tick only; the ordinary grounded gait retains its lower cost.
+        let substeps = 4;
+        for (const listener of stepListeners) if (listener(PHYSICS_STEP)?.substeps === 8) substeps = 8;
+        world.step(PHYSICS_STEP, substeps);
         accumulator = Math.max(0, accumulator - PHYSICS_STEP); steps++;
       }
       if (steps) sync();

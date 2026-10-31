@@ -44,8 +44,11 @@ export function meshControlsMarkup() {
         <p class="setup-status" role="status" aria-live="polite">Loading settings…</p>
         <fieldset class="panel-body">
           <section id="panel-mesh" role="tabpanel" aria-labelledby="tab-mesh">
+            <p class="control-heading">Herd movement</p>
+            ${fields('herd')}
+            <p class="camera-hint">0 stops new jumps; 1 is the original full force. The herd keeps shuffling between jumps.</p>
             <p class="control-heading">Box union</p>
-            <p class="camera-hint">Three nearby copies of a CSG sculpture made from seven random boxes. Each has its own bones and fitted colliders. New variation updates all three; Save retains the seed.</p>
+            <p class="camera-hint">Seven blobs, each made from five random boxes with its own seed. The saved herd seed reproduces all seven shapes. New variation generates a new herd.</p>
             <div class="camera-controls">${fieldMarkup('pipeline', meshFields.pipeline.find(([key]) => key === 'seed'))}</div>
             ${fields('boxes')}
             <button type="button" data-mesh-action="randomize">New variation</button>
@@ -63,11 +66,11 @@ export function meshControlsMarkup() {
               <p class="face-sides camera-hint"></p>
             </details>
             <p class="control-heading">Physics</p>
-            <p class="camera-hint">Drag the surface to grab and pull a fitted collider; release to let go. Spring joints connect source boxes that overlap in the generated layout. Detached pieces move freely and collide with the other clusters. Gravity at zero leaves them floating. Pause stops simulation; Reset restores the original pose.</p>
+            <p class="camera-hint">The herd shuffles and nudges together. Every kick cues a rear blob to clench and jump. Change the tempo in Audio; the rhythm continues when muted. Grab a blob to interrupt its turn. Pause stops the herd; Reset restores its seeded formation.</p>
             ${fieldMarkup('visibility', meshFields.visibility.find(([key]) => key === 'colliders'))}
             ${fields('rigidBody')}
             <p class="control-heading">Mesh operations</p>
-            <p class="camera-hint">Operations affect all three sculptures. Drag a sculpture to grab it; drag empty space to orbit.</p>
+            <p class="camera-hint">Operations affect all seven sculptures. Drag a sculpture to grab it; drag empty space to orbit.</p>
             <div class="field-actions"><button type="button" data-mesh-action="triangulate">Triangulate faces</button><button type="button" data-mesh-action="smooth">Smooth mesh</button><button type="button" data-mesh-action="undo" disabled>Undo</button></div>
             <p class="control-heading">Dual mesh</p>
             <div class="field-actions"><button type="button" data-mesh-action="dualDiamond">Dialate / Diamond</button><button type="button" data-mesh-action="hexelate">Hexelate</button></div>
@@ -79,7 +82,7 @@ export function meshControlsMarkup() {
           </section>
           <section id="panel-audio" role="tabpanel" aria-labelledby="tab-audio" hidden>
             <p class="control-heading">Strudel</p>${meshFields.audio.map(field => fieldMarkup('audio', field)).join('')}
-            <p class="camera-hint march-audio-status" role="status">Strudel ready · no pattern loaded.</p>
+            <p class="camera-hint march-audio-status" role="status">Herd · Night romp · touch the scene to start audio.</p>
 
             <p class="control-heading">Instruments</p>
             <p class="camera-hint">Bass, Harmony and Lead / texture each have their own sound, decay, filter, distortion, reverb and delay controls below. Save retains the sound settings.</p>
@@ -184,7 +187,7 @@ export function bindMeshControls(shell, { ui, change, playPause, reset, resetCam
       }
     },
     meshState({ faces, canUndo, layers = [], faceSides = {} }) {
-      query('.surface-status').textContent = faces ? `${faces} faces in the surface.` : 'No surface loaded.';
+      query('.surface-status').textContent = faces ? `${faces} faces across the herd.` : 'No surface loaded.';
       query('.layer-stats').textContent = layers.map(stage => `${stage.name}: ${stage.faces} faces`).join(' · ');
       query('.face-sides').textContent = !faces ? '' : `Final polygons · ${Object.entries(faceSides).sort(([a], [b]) => Number(a) - Number(b)).map(([sides, count]) => `${count} with ${sides} sides`).join(' · ')}`;
       for (const button of shell.querySelectorAll('[data-mesh-action]')) {

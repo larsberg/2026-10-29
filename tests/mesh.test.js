@@ -70,11 +70,11 @@ test('empty Strudel score never creates audio, even when enabled', async () => {
   audio.dispose();
 });
 
-test('a supplied Strudel pattern starts paused without creating an audio context', async () => {
+test('a supplied Strudel pattern stays silent while paused or explicitly muted', async () => {
   let contexts=0;
   const audio=createMarchAudio({pattern:pure({layer:'bass',note:48,gain:.5}),createContext:()=>{contexts++;throw new Error('Unexpected audio context');}});
-  assert.equal(defaultMeshSetup().audio.enabled,false);
-  audio.configure(defaultMeshSetup().audio);audio.play();await audio.retry();audio.restart();
+  audio.configure({...defaultMeshSetup().audio,enabled:true});await audio.retry();assert.equal(contexts,0);
+  audio.configure({...defaultMeshSetup().audio,enabled:false});audio.play();await audio.retry();audio.restart();
   assert.equal(contexts,0);assert.equal(audio.playing,false);assert.equal(audio.diagnostics.scheduledEvents,0);
   audio.dispose();
 });

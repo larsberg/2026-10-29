@@ -5,9 +5,10 @@ import { browserStorage, requestStaticSetup } from './static-setup.js';
 import { DEFAULT_FOLLOW_SMOOTHING, MIN_CAMERA_DISTANCE } from './camera.js';
 import { validateInstruments, mergeInstruments } from './instrument-settings.js';
 import { meshInfo } from './mesh-info.js';
-import { rawAudioSettings } from './raw-audio-settings.js';
+import { herdAudioSettings } from './herd-score.js';
 import { rigidBodyFields, validateRigidBody } from './rigid-body-settings.js';
 import { boxFields } from './box-settings.js';
+import { DEFAULT_JUMP_POWER } from './herd-rhythm.js';
 
 export const meshFields = {
   boxes: boxFields,
@@ -31,6 +32,7 @@ export const meshFields = {
     ['smoothingStrength', 'Smoothing strength', 0.5, 0.01, 1, 0.01],
   ],
   rigidBody: rigidBodyFields,
+  herd: [['jumpPower', 'Jump force', DEFAULT_JUMP_POWER, 0, 1, .001]],
   audio: [
     ['enabled', 'Enable audio', false],
     ['bpm', 'Tempo (BPM)', 120, 40, 200, 0.1],
@@ -65,8 +67,8 @@ export const meshFields = {
     ['optimizedTextures', 'Use smaller textures', false],
     ['followSmoothing', 'Follow smoothing (s)', DEFAULT_FOLLOW_SMOOTHING, 0, 2, 0.05],
     ['yaw', 'Yaw °', 0, -180, 180, 0.01],
-    ['elevation', 'Elevation °', 0, -89.9, 89.9, 0.01],
-    ['distance', 'Distance', 34, MIN_CAMERA_DISTANCE, 400, 0.01],
+    ['elevation', 'Elevation °', 25, -89.9, 89.9, 0.01],
+    ['distance', 'Distance', 62, MIN_CAMERA_DISTANCE, 400, 0.01],
     // Keep the expanded bounds compatible with earlier world-space saves.
     ['offsetX', 'Offset X', 0, -1000000, 1000000, 0.01],
     ['offsetY', 'Offset Y', 0, -1000000, 1000000, 0.01],
@@ -93,7 +95,7 @@ export function defaultMeshSetup() {
   const result = { version: 1, sketch: '2026-10-29', materials: defaultMaterials(), lighting,
     info: structuredClone(meshInfo),
     ...Object.fromEntries(Object.entries(meshFields).map(([group, fields]) => [group, Object.fromEntries(fields.map(([key, , value]) => [key, value]))])) };
-  Object.assign(result.audio, rawAudioSettings());
+  Object.assign(result.audio, herdAudioSettings());
   return result;
 }
 
@@ -103,6 +105,7 @@ export function validateMeshSetup(value) {
   // Retain the shared editing controls when loading a partial older setup.
   value = { ...value,
     boxes: value.boxes === undefined ? result.boxes : value.boxes,
+    herd: value.herd === undefined ? result.herd : value.herd,
     pipeline: value.pipeline === undefined ? result.pipeline : value.pipeline,
     rigidBody:validateRigidBody(value.rigidBody) };
   if (value.visibility && value.visibility.surface === undefined) value.visibility = { ...value.visibility, surface: result.visibility.surface };

@@ -39,8 +39,8 @@ test('the default camera frames a centered shared-vertex test grid', () => {
   assert.equal(new Set(mesh.vertices.map(point => JSON.stringify(point))).size, 130);
   const camera = new PerspectiveCamera(), controls = { target: new Vector3(), update() {} };
   applyCameraView(setup.camera, camera, controls, new Vector3());
-  assert.ok(camera.position.distanceTo(new Vector3(0,0,34)) < 1e-10);
-  assert.ok(camera.getWorldDirection(new Vector3()).dot(new Vector3(0,0,-1)) > .999999);
+  assert.ok(Math.abs(camera.position.length() - 62) < 1e-10);
+  assert.ok(camera.position.y > 0, 'The opening camera looks at the herd from above the ground.');
   checkGrid(mesh, 8, 6);
 });
 

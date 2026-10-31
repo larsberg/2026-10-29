@@ -1,4 +1,4 @@
-import { BufferAttribute, BufferGeometry, DataTexture, DoubleSide, DynamicDrawUsage, FloatType, Mesh, MeshNormalMaterial, RGBAFormat, SkinnedMesh } from 'three';
+import { Box3, BufferAttribute, BufferGeometry, DataTexture, DoubleSide, DynamicDrawUsage, FloatType, Mesh, MeshNormalMaterial, RGBAFormat, SkinnedMesh, Sphere, Vector3 } from 'three';
 import { triangulateFace } from './mesh-operations.js';
 import { bindPolygonNormals } from './polygon-normals.js';
 
@@ -22,6 +22,7 @@ export function createMeshSurface(topology, material, { skinned = false } = {}) 
   const pixels = new Float32Array(width * height * 4), texture = new DataTexture(pixels, width, height, RGBAFormat, FloatType);
   const normals = bindPolygonNormals(material, texture);
   const mesh = skinned ? new SkinnedMesh(geometry, material) : new Mesh(geometry, material); mesh.name = 'Blobby material · polygon surface';
+  const deformedBounds = new Box3(), deformedSphere = new Sphere(), boundPoint = new Vector3();
   mesh.castShadow = mesh.receiveShadow = true; mesh.frustumCulled = false; mesh.layers.enable(1);
   const aoMaterial = new MeshNormalMaterial({ side: DoubleSide, flatShading: material.flatShading }); aoMaterial.allowOverride = false;
   const aoNormals = bindPolygonNormals(aoMaterial, texture, normals.normalMix); mesh.userData.aoNormalMaterial = aoMaterial;
@@ -36,6 +37,8 @@ export function createMeshSurface(topology, material, { skinned = false } = {}) 
       }
     });
     texture.needsUpdate = position.needsUpdate = normal.needsUpdate = true;
+    geometry.boundingBox = geometry.boundingSphere = null;
+    if (skinned) mesh.boundingBox = mesh.boundingSphere = null;
   }
   configure(); update(smooth.attributes.position.array);
   function updateDeformed(positions) {
@@ -45,7 +48,10 @@ export function createMeshSurface(topology, material, { skinned = false } = {}) 
       for (let axis = 0; axis < 3; axis++) pixels[corner * 4 + axis] = positions[id * 3 + axis];
     });
     texture.needsUpdate = true;
-    mesh.boundingBox = mesh.boundingSphere = null;
+    deformedBounds.makeEmpty();
+    for (let i = 0; i < positions.length; i += 3) deformedBounds.expandByPoint(boundPoint.fromArray(positions, i));
+    deformedBounds.getBoundingSphere(deformedSphere);
+    mesh.boundingBox = deformedBounds; mesh.boundingSphere = deformedSphere;
   }
   return { mesh, corners, configure, update, updateDeformed, get normalMix() { return normals.normalMix.value; },
     dispose() { mesh.removeFromParent(); normals.dispose(); aoNormals.dispose(); aoMaterial.dispose(); texture.dispose(); geometry.dispose(); smooth.dispose(); } };

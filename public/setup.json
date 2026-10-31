@@ -30,9 +30,9 @@
     "spotlight": {
       "enabled": true,
       "color": "#ffdbb4",
-      "intensity": 600,
+      "intensity": 2400,
       "offsetX": -3,
-      "height": 13.1,
+      "height": 26,
       "offsetZ": 4,
       "angle": 50,
       "penumbra": 0.5,
@@ -153,7 +153,7 @@
     }
   },
   "boxes": {
-    "spread": 2.6
+    "spread": 2.3
   },
   "pipeline": {
     "enabled": true,
@@ -171,93 +171,96 @@
     "hexelateTriangulateEnabled": true,
     "hexelateEnabled": true,
     "finalAverageVerticesEnabled": true,
-    "smoothingIterations": 4,
-    "smoothingStrength": 0.5
+    "smoothingIterations": 2,
+    "smoothingStrength": 0.3
   },
   "rigidBody": {
-    "gravity": 0,
-    "friction": 0
+    "gravity": 100,
+    "friction": 0.55
+  },
+  "herd": {
+    "jumpPower": 0.762
   },
   "audio": {
-    "enabled": false,
-    "bpm": 120,
-    "volume": 0.6,
-    "drums": 0.42,
-    "bass": 0.86,
-    "keys": 0.7,
-    "melody": 0.64,
+    "enabled": true,
+    "bpm": 128,
+    "volume": 0.55,
+    "drums": 0.7,
+    "bass": 0.92,
+    "keys": 0.72,
+    "melody": 0.4,
     "instruments": {
       "kick": {
-        "sound": "suuns-kick",
-        "level": 1.06,
-        "decay": 0.86,
-        "cutoff": 1000,
+        "sound": "sub",
+        "level": 0.95,
+        "decay": 0.46,
+        "cutoff": 850,
         "resonance": 0.45,
-        "drive": 0.16,
+        "drive": 0.1,
         "reverb": 0,
         "delay": 0,
         "delayBeats": 0.5,
         "feedback": 0.3
       },
       "snare": {
-        "sound": "original",
-        "level": 0.15,
-        "decay": 0.5,
-        "cutoff": 5500,
+        "sound": "rim",
+        "level": 0.58,
+        "decay": 0.65,
+        "cutoff": 2800,
         "resonance": 0.45,
         "drive": 0,
-        "reverb": 0.06,
-        "delay": 0,
-        "delayBeats": 0.5,
-        "feedback": 0.3
+        "reverb": 0.08,
+        "delay": 0.045,
+        "delayBeats": 0.75,
+        "feedback": 0.16
       },
       "hat": {
         "sound": "closed",
-        "level": 0.14,
-        "decay": 0.7,
-        "cutoff": 6500,
+        "level": 0.38,
+        "decay": 0.65,
+        "cutoff": 6200,
         "resonance": 0.45,
         "drive": 0,
-        "reverb": 0.03,
+        "reverb": 0.04,
         "delay": 0,
         "delayBeats": 0.5,
         "feedback": 0.3
       },
       "bass": {
-        "sound": "raw-bass",
-        "level": 0.9,
-        "decay": 1,
-        "cutoff": 1250,
+        "sound": "sub",
+        "level": 1.1,
+        "decay": 0.8,
+        "cutoff": 190,
         "resonance": 0.45,
-        "drive": 0.08,
+        "drive": 0.035,
         "reverb": 0,
         "delay": 0,
         "delayBeats": 0.5,
         "feedback": 0.3
       },
       "keys": {
-        "sound": "raw-chord",
-        "level": 0.8,
-        "decay": 1,
-        "cutoff": 3800,
+        "sound": "electric",
+        "level": 1,
+        "decay": 0.62,
+        "cutoff": 4300,
         "resonance": 0.45,
-        "drive": 0.32,
-        "reverb": 0.1,
-        "delay": 0.055,
+        "drive": 0,
+        "reverb": 0.18,
+        "delay": 0.035,
         "delayBeats": 0.75,
-        "feedback": 0.19
+        "feedback": 0.12
       },
       "melody": {
-        "sound": "raw-glide",
-        "level": 0.8,
-        "decay": 1,
-        "cutoff": 5500,
+        "sound": "pluck",
+        "level": 0.72,
+        "decay": 0.7,
+        "cutoff": 3600,
         "resonance": 0.45,
-        "drive": 0.1,
-        "reverb": 0.17,
-        "delay": 0.15,
-        "delayBeats": 0.75,
-        "feedback": 0.28
+        "drive": 0,
+        "reverb": 0.2,
+        "delay": 0,
+        "delayBeats": 0.5,
+        "feedback": 0.3
       }
     }
   },
@@ -285,9 +288,9 @@
     "follow": true,
     "optimizedTextures": false,
     "followSmoothing": 0.45,
-    "yaw": -117.456925671,
-    "elevation": -22.3716628158,
-    "distance": 34,
+    "yaw": 45.100943517,
+    "elevation": 25.6170946456,
+    "distance": 62,
     "offsetX": 0,
     "offsetY": 0,
     "offsetZ": 0,

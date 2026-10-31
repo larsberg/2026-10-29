@@ -9,7 +9,7 @@ import { averageVertices, dualDiamond, dualNSided, triangulateFaces, validatePol
 export function createMeshView(scene, sharedSurfaceMaterial, physics) {
   const surfaceMaterial = sharedSurfaceMaterial ?? createFaceMetal(); surfaceMaterial.side = DoubleSide;
   surfaceMaterial.polygonOffset = true; surfaceMaterial.polygonOffsetFactor = surfaceMaterial.polygonOffsetUnits = 1;
-  let surface, rig, bindingSource;
+  let surface, rig, bindingSource, deformedPositions, wireframeDirty = false;
   const material = new LineBasicMaterial({ color: '#ffffff' });
   const object = new LineSegments(new BufferGeometry(), material);
   object.name = 'Polygon mesh wireframe'; scene.add(object);
@@ -25,6 +25,16 @@ export function createMeshView(scene, sharedSurfaceMaterial, physics) {
     if (values.length) geometry.computeBoundingSphere();
     return geometry;
   };
+  function updateWireframe() {
+    if (!material.visible || !wireframeDirty || !deformedPositions) return;
+    const attribute = object.geometry.attributes.position, values = attribute.array;
+    let offset = 0;
+    for (const edge of edges) for (const id of edge) {
+      const start = id * 3;
+      values[offset++] = deformedPositions[start]; values[offset++] = deformedPositions[start + 1]; values[offset++] = deformedPositions[start + 2];
+    }
+    attribute.needsUpdate = true; wireframeDirty = false;
+  }
   function install(next) {
     validatePolygonMesh(next);
     const nextEdges = polygonEdges(next.faces);
@@ -35,14 +45,12 @@ export function createMeshView(scene, sharedSurfaceMaterial, physics) {
     surface?.dispose(); surface = undefined;
     object.geometry.dispose(); object.geometry = wireframe;
     topology = next; edges = nextEdges;
+    deformedPositions = undefined; wireframeDirty = false;
     surface = createMeshSurface(next, surfaceMaterial, { skinned: !!(physics && bindingSource) }); object.add(surface.mesh);
     surface.mesh.visible = configured?.visibility.surface !== false;
     if (physics && bindingSource) rig = createBoxRig(bindingSource, next, surface, physics, positions => {
-      const attribute = object.geometry.attributes.position;
-      edges.forEach((edge, i) => edge.forEach((id, end) => attribute.setXYZ(i * 2 + end, ...positions.subarray(id * 3, id * 3 + 3))));
-      attribute.needsUpdate = true;
-      bounds.makeEmpty();
-      for (let i = 0; i < positions.length; i += 3) bounds.expandByPoint(point.fromArray(positions, i));
+      deformedPositions = positions; wireframeDirty = true; updateWireframe();
+      bounds.copy(surface.mesh.boundingBox);
     });
     rig?.setCollidersVisible(configured?.visibility.colliders);
   }
@@ -62,6 +70,7 @@ export function createMeshView(scene, sharedSurfaceMaterial, physics) {
       surface?.dispose(); surface = undefined;
       object.geometry.dispose(); object.geometry = new BufferGeometry();
       base = topology = undefined; edges = []; layers = { stages: [] };
+      deformedPositions = undefined; wireframeDirty = false;
       bounds.makeEmpty(); history.length = 0; generation++;
     },
     getCenter(target) {
@@ -107,6 +116,7 @@ export function createMeshView(scene, sharedSurfaceMaterial, physics) {
       configured = settings;
       material.color.set(settings.appearance.wireframeColor);
       material.visible = settings.visibility.wireframe;
+      updateWireframe();
       object.visible = settings.visibility.surface || settings.visibility.wireframe || settings.visibility.colliders;
       rig?.setCollidersVisible(settings.visibility.colliders);
       if (surface) { surface.mesh.visible = settings.visibility.surface; surface.configure(); }

@@ -1,17 +1,23 @@
 import { Box3, DoubleSide, Group, Vector3 } from 'three';
 import { createMeshLayers, createSeededRandom } from './mesh-layers.js';
 import { createMeshView } from './mesh-view.js';
+import { createBoxUnion } from './box-union.js';
 
-export const SCULPTURE_COUNT = 3;
+export const SCULPTURE_COUNT = 7;
+
+// One saved herd seed reproducibly gives every member its own shape seed.
+export function createHerdSources(seed, spread) {
+  return Array.from({ length: SCULPTURE_COUNT }, (_, i) => createBoxUnion((seed + i * 104729) % 1000001, spread));
+}
 
 export function createSculptureGroup(scene, material, physics) {
-  const object = new Group(); object.name = 'Three CSG sculptures'; scene.add(object);
+  const object = new Group(); object.name = 'Seven CSG sculptures'; scene.add(object);
   // Each skin needs its own polygon-normal texture uniforms. Keep the material
   // controls shared, but give each copy an independent material/shader binding.
   const materials = Array.from({ length: SCULPTURE_COUNT }, () => material.clone());
   const views = materials.map(value => createMeshView(object, value, physics));
   const primary = views[0], bounds = new Box3(), childBounds = new Box3();
-  let activeRig;
+  let activeRig, sources = [];
   const rig = {
     pickCollider(caster) {
       let closest = null;
@@ -58,27 +64,44 @@ export function createSculptureGroup(scene, material, physics) {
     get generation() { return primary.generation; },
     get layers() { return primary.layers; },
     get canUndo() { return views.every(view => view.canUndo); },
-    setMesh(mesh, settings, source) {
+    get sources() { return sources; },
+    setSources(nextSources, settings) {
       rig.endDrag();
-      const layers = createMeshLayers(mesh, settings.pipeline);
-      const shapeBounds = new Box3().setFromPoints(layers.mesh.vertices.map(vertex => new Vector3(...vertex)));
-      const size = shapeBounds.getSize(new Vector3()), center = shapeBounds.getCenter(new Vector3());
-      const gap = Math.max(.35, size.length() * .04), x = (size.x + gap) / 2, z = (size.z + gap) / 2;
-      const positions = [new Vector3(-x, 0, z), new Vector3(x, 0, z), new Vector3(0, 0, -z)];
+      sources = nextSources;
+      const layers = sources.map(source => createMeshLayers(source.mesh, { ...settings.pipeline, seed: source.seed }));
+      const shapes = layers.map(layer => new Box3().setFromPoints(layer.mesh.vertices.map(vertex => new Vector3(...vertex))));
+      const sizes = shapes.map(shape => shape.getSize(new Vector3()));
+      // Compact rows, sized from the finished meshes so every seed starts clear
+      // of its neighbors. The last row forms the rear of the herd.
+      const gap = .55, positions = [];
+      let depth = 0;
+      for (let start = 0; start < sizes.length; start += 3) {
+        const row = sizes.slice(start, start + 3);
+        const rowDepth = Math.max(...row.map(size => size.z));
+        let x = -(row.reduce((sum, size) => sum + size.x, 0) + gap * (row.length - 1)) / 2;
+        for (const size of row) {
+          positions.push(new Vector3(x + size.x / 2, 0, depth + rowDepth / 2));
+          x += size.x + gap;
+        }
+        depth += rowDepth + gap;
+      }
+      for (const position of positions) position.z -= (depth - gap) / 2;
       // Clear every old rig first so rebuilding never mixes old/new colliders.
       views.forEach(view => view.clear());
       views.forEach((view, i) => {
+        const center = shapes[i].getCenter(new Vector3());
         view.object.position.copy(positions[i]).sub(center);
-        view.setMesh(mesh, settings, source, structuredClone(layers));
-        view.surface.mesh.name = `CSG sculpture ${i + 1} · seven boxes`;
+        view.object.position.y = .2 - shapes[i].min.y;
+        view.setMesh(sources[i].mesh, settings, sources[i], layers[i]);
+        view.surface.mesh.name = `Herd blob ${i + 1} · seed ${sources[i].seed}`;
       });
       configure(settings); return primary.topology;
     },
     clear() { rig.endDrag(); views.forEach(view => view.clear()); },
     triangulate(ids, { seed, ...options } = {}) {
       rig.endDrag();
-      return views.map(view => view.triangulate(ids, { ...options,
-        ...(seed === undefined ? {} : { random: createSeededRandom(seed) }) }))[0];
+      return views.map((view, i) => view.triangulate(ids, { ...options,
+        ...(seed === undefined ? {} : { random: createSeededRandom((seed + i * 104729) % 1000001) }) }))[0];
     },
     dispose() { rig.endDrag(); views.forEach(view => view.dispose()); materials.forEach(value => value.dispose()); object.removeFromParent(); },
   };

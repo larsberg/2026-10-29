@@ -4,7 +4,7 @@ import { triangulateFaces } from './mesh-operations.js';
 import { Euler, Quaternion, Vector3 } from 'three';
 import { validateBoxSpread } from './box-settings.js';
 
-export const BOX_COUNT = 7;
+export const BOX_COUNT = 5;
 let engine, initialization;
 
 export function initCSG(options) {

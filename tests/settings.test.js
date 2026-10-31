@@ -66,11 +66,12 @@ test('spotlight settings migrate once and retain independent saved controls',()=
   assert.throws(()=>mergeMeshSetup(custom,{lighting:{spotlight:{angle:90}}}));
 });
 
-test('the default study starts with audio off and the editable bundled setup validates',async()=>{
+test('the herd loads its bass and drum defaults and the editable bundled setup validates',async()=>{
   const bundled=JSON.parse(await readFile(new URL('../public/setup.json',import.meta.url),'utf8'));
   assert.equal(bundled.sketch,'2026-10-29');assert.equal(typeof bundled.audio.enabled,'boolean');
-  const defaults=defaultMeshSetup();assert.equal(defaults.audio.enabled,false);
-  assert.equal(defaults.audio.bpm,120);assert.equal(defaults.audio.instruments.keys.sound,'raw-chord');
+  const defaults=defaultMeshSetup();assert.equal(defaults.audio.enabled,true);
+  assert.equal(defaults.audio.bpm,128);assert.equal(defaults.audio.instruments.kick.sound,'sub');
+  assert.ok(defaults.audio.bass>0 && defaults.audio.keys>0 && defaults.audio.melody>0);
   assert.equal(bundled.rig,undefined);
   // Saved rich text is editable and may differ from the reset defaults.
   assert.deepEqual(validateMeshSetup(bundled),bundled);
@@ -94,4 +95,16 @@ test('rigid friction migrates older saves and roundtrips without changing gravit
   assert.deepEqual(edited.rigidBody,{gravity:196,friction:2});
   assert.deepEqual(validateMeshSetup(JSON.parse(JSON.stringify(edited))),edited);
   for(const friction of [-1,2.01,NaN,null,'1'])assert.throws(()=>mergeMeshSetup(edited,{rigidBody:{friction}}));
+});
+
+test('jump power defaults to one-third, migrates old saves, and preserves its endpoints', () => {
+  const setup = defaultMeshSetup();
+  assert.equal(setup.herd.jumpPower, 1 / 3);
+  const old = structuredClone(setup); delete old.herd;
+  assert.equal(validateMeshSetup(old).herd.jumpPower, 1 / 3);
+  for (const jumpPower of [0, 1 / 3, 1]) {
+    const saved = mergeMeshSetup(setup, { herd: { jumpPower } });
+    assert.equal(validateMeshSetup(JSON.parse(JSON.stringify(saved))).herd.jumpPower, jumpPower);
+  }
+  for (const jumpPower of [-.1, 1.01, NaN, '0.3']) assert.throws(() => mergeMeshSetup(setup, { herd: { jumpPower } }));
 });

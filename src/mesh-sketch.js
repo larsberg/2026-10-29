@@ -1,8 +1,11 @@
 import { fitMeshShadows } from './mesh-shadows.js';
-import { createSculptureGroup } from './sculpture-group.js';
+import { createHerdSources, createSculptureGroup } from './sculpture-group.js';
+import { createHerdGround, GROUND_Y } from './herd-ground.js';
+import { createHerdMotion } from './herd-motion.js';
+import { createHerdScore } from './herd-score.js';
 import { initPhysics, createPhysics } from './physics.js';
 import { bindColliderDrag } from './collider-drag.js';
-import { initCSG, createBoxUnion } from './box-union.js';
+import { initCSG } from './box-union.js';
 import manifoldWasmUrl from 'manifold-3d/manifold.wasm?url';
 import { createStartupGate } from "./startup.js";
 import { bindThumbnailCapture } from "./thumbnail-controls.js";
@@ -48,7 +51,7 @@ export async function mountMesh(root,{ui=false}={}) {
   shell.prepend(renderer.domElement);
   const scene=new THREE.Scene();scene.background=new THREE.Color('#000000');
   const camera=new THREE.PerspectiveCamera(42,1,0.1,1000);camera.position.set(6.2,4.9,9.2);
-  const controls=new OrbitControls(camera,renderer.domElement);controls.target.set(0,1.9,0);controls.enableDamping=true;controls.maxDistance=400;controls.minPolarAngle=THREE.MathUtils.degToRad(0.1);controls.maxPolarAngle=THREE.MathUtils.degToRad(179.9);configureOrbitInputs(controls);
+  const controls=new OrbitControls(camera,renderer.domElement);controls.target.set(0,1.9,0);controls.enableDamping=true;controls.maxDistance=400;controls.minPolarAngle=THREE.MathUtils.degToRad(0.1);controls.maxPolarAngle=THREE.MathUtils.degToRad(85);configureOrbitInputs(controls);
   let orbitDragging=false;
   // Wheel zoom also emits start/end, but has no active pointer-drag state.
   const startOrbit=()=>{orbitDragging=controls.state>=0;if(orbitDragging)stopCameraForDrag();},endOrbit=()=>{orbitDragging=false;};
@@ -59,15 +62,19 @@ export async function mountMesh(root,{ui=false}={}) {
   const spotlight=new THREE.SpotLight();spotlight.name='Following spotlight';spotlight.castShadow=true;spotlight.shadow.mapSize.set(2048,2048);spotlight.shadow.camera.near=.1;spotlight.shadow.camera.far=100;scene.add(spotlight,spotlight.target);
   const meshMaterial=createFaceMetal();meshMaterial.envMap=environment.texture;
   const views=createSculptureGroup(scene,meshMaterial,physics);
+  const ground=createHerdGround(scene,physics,settings.floor);
+  let herdMotion;
   const textProp=createTextProp(Math.min(4,renderer.capabilities.getMaxAnisotropy()),1024);
   textProp.material.envMap=environment.texture;
-  textProp.mesh.rotation.x=-Math.PI/2;textProp.mesh.position.set(0,-5.485,0);scene.add(textProp.mesh);
+  textProp.mesh.rotation.x=-Math.PI/2;textProp.mesh.position.set(0,GROUND_Y+.02,0);scene.add(textProp.mesh);
   const effects=createSceneEffects(renderer,scene,camera,{clampBeauty:false});
   function renderScene(){effects.render();}
   let running=true,disposed=false,last=0,dirty=true,statsTime=0,frameMs=16.67;
   let panel,lightingControls,stats,focus,colliderDrag,applyingCamera=false,setupBusy=false;
   const audioStatus=shell.querySelector('.march-audio-status');
-  const marchAudio=createMarchAudio({canPlay:()=>running&&!document.hidden,onStatus:message=>{audioStatus.textContent=message;}});
+  const marchAudio=createMarchAudio({pattern:createHerdScore(settings.pipeline.seed),canPlay:()=>running&&!document.hidden,onStatus:message=>{audioStatus.textContent=message;}});
+  herdMotion=createHerdMotion(physics,views,ground,{getBeat:()=>marchAudio.beat,getGroove:beat=>marchAudio.readMotion(beat),jumpPower:settings.herd.jumpPower});
+  let scoreSeed=settings.pipeline.seed;
   const recording=bindRecordingControls(shell,renderer.domElement,marchAudio);
   const paletteMotion=createStudioPaletteMotion({environment,scene,sun,hemisphere,spotlight,lighting:settings.lighting});
   const setupAbort=new AbortController(),followTarget=new THREE.Vector3(),worldOrigin=new THREE.Vector3();
@@ -112,6 +119,8 @@ export async function mountMesh(root,{ui=false}={}) {
     const meshChanged=next.boxes.spread!==settings.boxes.spread||JSON.stringify(next.pipeline)!==JSON.stringify(settings.pipeline);
     settings=next;
     physics.configure(settings.rigidBody);
+    herdMotion.configure(settings.herd);
+    ground.configure(settings.floor);
     if(cameraChanged){cameraFollow.reset(groupCenter());}
     if(followChanged&&!restoringView){
       // Switching follow modes keeps the current framing. Only explicit
@@ -121,7 +130,7 @@ export async function mountMesh(root,{ui=false}={}) {
         if(value.camera?.[key]===undefined)settings.camera[key]=view[key];
     }
     marchAudio.configure(settings.audio);
-    if(!settings.audio.enabled)audioStatus.textContent='Strudel ready · no pattern loaded.';
+    if(!settings.audio.enabled)audioStatus.textContent='Herd · Night romp · audio off';
     configureSceneFog(scene,settings.fog);
     textProp.alignToTiles(settings.floor.tileSize,settings.infoLayout);
     textProp.mesh.visible=settings.visibility.text;
@@ -168,8 +177,8 @@ export async function mountMesh(root,{ui=false}={}) {
   }
   function syncMeshStatus() {
     const faceSides = {};
-    for (const face of views.topology?.faces ?? []) faceSides[face.length] = (faceSides[face.length] ?? 0) + 1;
-    panel?.meshState({ faces: views.topology?.faces.length ?? 0, canUndo: views.canUndo, layers: views.layers.stages, faceSides });
+    for (const view of views.views) for (const face of view.topology?.faces ?? []) faceSides[face.length] = (faceSides[face.length] ?? 0) + 1;
+    panel?.meshState({ faces: Object.values(faceSides).reduce((sum,count)=>sum+count,0), canUndo: views.canUndo, layers: views.layers.stages, faceSides });
   }
   function meshAction(action) {
     if(setupBusy)return;
@@ -184,7 +193,7 @@ export async function mountMesh(root,{ui=false}={}) {
       else if(action==='dualNSided')views.dualNSided();
       else if(action==='smooth')views.smooth({iterations:settings.pipeline.smoothingIterations,strength:settings.pipeline.smoothingStrength});
       else throw new Error('Unknown mesh operation.');
-      dirty=true;syncMeshStatus();
+      herdMotion.reset();dirty=true;syncMeshStatus();
       const labels={triangulate:'Faces triangulated',dualDiamond:'Dialate applied',hexelate:'Hexelate applied',dualNSided:'Face-center dual applied',smooth:'Mesh smoothed',undo:'Mesh edit undone'};
       panel.status(`${labels[action]} · ${views.topology.faces.length} faces`);
       return views.topology;
@@ -199,12 +208,14 @@ export async function mountMesh(root,{ui=false}={}) {
   function endDrag(){orbitDragging=false;colliderDrag?.end();}
   focus=bindFocusPlayback({isRunning:()=>running,pause,play});
   const unbindAudio=bindAudioAutoplay({audio:marchAudio,target:document,shouldEnable:()=>false,beforeRetry:()=>focus.interact()});
-  let viewportWidth=0,viewportHeight=0,boxUnion;
+  let viewportWidth=0,viewportHeight=0,boxUnions;
   function regenerate() {
     endDrag();
     camera.updateMatrixWorld();
-    if(boxUnion?.seed!==settings.pipeline.seed||boxUnion?.spread!==settings.boxes.spread)boxUnion=createBoxUnion(settings.pipeline.seed,settings.boxes.spread);
-    views.setMesh(boxUnion.mesh,settings,boxUnion);
+    if(boxUnions?.[0].seed!==settings.pipeline.seed||boxUnions?.[0].spread!==settings.boxes.spread)boxUnions=createHerdSources(settings.pipeline.seed,settings.boxes.spread);
+    views.setSources(boxUnions,settings);
+    if(scoreSeed!==settings.pipeline.seed){scoreSeed=settings.pipeline.seed;void marchAudio.setPattern(createHerdScore(scoreSeed));}
+    marchAudio.restart();herdMotion.reset(settings.pipeline.seed);
     dirty=true;syncMeshStatus();
     // Keep the saved orbit centered on the installed surface.
     if(settings.camera.follow){
@@ -238,7 +249,7 @@ export async function mountMesh(root,{ui=false}={}) {
     const dt=last?Math.min((time-last)/1000,0.05):0;last=time;
     if(dirty||time-statsTime>400) {
       const mesh=views.topology;
-      panel.stats(mesh?`${Math.round(1000/frameMs)} fps · ${views.views.length} sculptures · ${mesh.vertices.length*views.views.length} vertices · ${mesh.faces.length*views.views.length} faces`:'No surface loaded');
+      panel.stats(mesh?`${Math.round(1000/frameMs)} fps · ${views.views.length} blobs · ${views.views.reduce((sum,view)=>sum+view.topology.vertices.length,0)} vertices · ${views.views.reduce((sum,view)=>sum+view.topology.faces.length,0)} faces`:'No surface loaded');
       syncMeshStatus();dirty=false;statsTime=time;
     }
     colliderDrag.update();
@@ -251,11 +262,11 @@ export async function mountMesh(root,{ui=false}={}) {
     renderScene();recording.recorder.captureFrame();startup.reveal();stats?.update();
   });
   const thumbnailCapture = import.meta.env.DEV ? bindThumbnailCapture(shell, renderer.domElement, renderScene) : null;
-  const api={play,pause(){focus.cancelResume();pause();},reset,setup:apply,getSetup,saveSetup,loadSetup,getState:()=>({running,audio:marchAudio.playing,faces:views.topology?.faces.length??0}),
+  const api={play,pause(){focus.cancelResume();pause();},reset,setup:apply,getSetup,saveSetup,loadSetup,getState:()=>({running,audio:marchAudio.playing,faces:views.views.reduce((sum,view)=>sum+(view.topology?.faces.length??0),0)}),
     editMesh:meshAction,audio:marchAudio,setComposition(pattern){return marchAudio.setPattern(pattern);},paletteMotion,scene,
-    get mesh(){return views;},get boxUnion(){return boxUnion;},environment,physics,renderer,camera,controls,recording:recording.recorder,render(){physics.sync();renderScene();},
+    get mesh(){return views;},get boxUnion(){return boxUnions?.[0];},get boxUnions(){return boxUnions;},ground,herdMotion,environment,physics,renderer,camera,controls,recording:recording.recorder,render(){physics.sync();renderScene();},
     dispose(){disposed=true;startup.dispose();renderer.setAnimationLoop(null);setupAbort.abort();colliderDrag.dispose();unbindAudio();recording.dispose();marchAudio.dispose();focus.dispose();resize.disconnect();controls.removeEventListener('start',startOrbit);controls.removeEventListener('end',endOrbit);controls.dispose();panel.dispose();infoControls.dispose();thumbnailCapture?.dispose(); effects.dispose();stats?.dom.remove();
-      views.dispose();physics.dispose();meshMaterial.dispose();
+      herdMotion.dispose();views.dispose();ground.dispose();physics.dispose();meshMaterial.dispose();
       const geometries=new Set(),materials=new Set();scene.traverse(object=>{if(object.geometry)geometries.add(object.geometry);if(object.material)materials.add(object.material);});
       geometries.delete(textProp.mesh.geometry);materials.delete(textProp.material);textProp.dispose();geometries.forEach(g=>g.dispose());materials.forEach(m=>m.dispose());environment.dispose();sun.shadow.dispose();spotlight.shadow.dispose();renderer.dispose();shell.remove();if(window.__meshSketch===api)delete window.__meshSketch;
     }};

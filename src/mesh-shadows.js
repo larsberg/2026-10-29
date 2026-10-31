@@ -12,8 +12,10 @@ export function fitMeshShadows(light, mesh, floorY = 0, props = null) {
   bounds.makeEmpty();
   for (const value of meshes) {
     value.updateWorldMatrix(true, false);
-    if (value.isSkinnedMesh) value.computeBoundingBox();
-    else value.geometry.computeBoundingBox();
+    // Reuse the bounds measured when the rig deforms instead of CPU-skinning
+    // every face corner again on every rendered frame.
+    if (value.isSkinnedMesh) { if (!value.boundingBox) value.computeBoundingBox(); }
+    else if (!value.geometry.boundingBox) value.geometry.computeBoundingBox();
     lightSpace.multiplyMatrices(camera.matrixWorldInverse, value.matrixWorld);
     bounds.union(propBounds.copy(value.isSkinnedMesh ? value.boundingBox : value.geometry.boundingBox).applyMatrix4(lightSpace));
   }

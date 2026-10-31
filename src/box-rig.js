@@ -108,7 +108,7 @@ export function createBoxRig(source, topology, surface, physics, onDeform) {
     try {
       const mass = entries.reduce((sum, entry) => sum + entry.body.getMass(), 0);
       // Pull the picked point without locking rotation. The existing joints
-      // transmit the pull through the cluster and its seven skinning bones.
+      // transmit the pull through the cluster and its skinning bones.
       const joint = physics.addMotorJoint(anchor, link, {
         localFrameB: { position: link.body.getLocalPoint(worldPoint) },
         linearHertz: 30, linearDampingRatio: .85,
@@ -156,14 +156,17 @@ export function createBoxRig(source, topology, surface, physics, onDeform) {
     const positions = new Float32Array(topology.vertices.length * 3);
     const matrices = bones.map(() => new Matrix4()), point = new Vector3(), blended = new Vector3(), transformed = new Vector3();
     const colliderParentInverse = new Matrix4(), colliderMatrix = new Matrix4();
-    function sync() {
-      skin.updateWorldMatrix(true, true); skeleton.update();
+    function syncColliders() {
       colliderGroup.updateWorldMatrix(true, false); colliderParentInverse.copy(colliderGroup.matrixWorld).invert();
       entries.forEach(({ body }, i) => {
         colliderMatrix.compose(bodyPosition.copy(body.getPosition()), bodyRotation.copy(body.getRotation()).normalize(), unitScale);
         colliderLines[i].matrix.multiplyMatrices(colliderParentInverse, colliderMatrix);
         colliderLines[i].matrixWorldNeedsUpdate = true;
       });
+    }
+    function sync() {
+      skin.updateWorldMatrix(true, true); skeleton.update();
+      if (colliderGroup.visible) syncColliders();
       bones.forEach((bone, i) => matrices[i].multiplyMatrices(bone.matrixWorld, skeleton.boneInverses[i]));
       topology.vertices.forEach((vertex, i) => {
         point.fromArray(vertex).applyMatrix4(skin.bindMatrix); blended.set(0, 0, 0);
@@ -180,7 +183,11 @@ export function createBoxRig(source, topology, surface, physics, onDeform) {
     });
     sync();
     return { bones, skeleton, skin, entries, joints, connections, components, weights, positions, colliders, colliderGroup, colliderLines, sync, dispose,
-      setCollidersVisible(value) { colliderGroup.visible = !!value; },
+      setCollidersVisible(value) {
+        const show = !!value;
+        if (show && !colliderGroup.visible) syncColliders();
+        colliderGroup.visible = show;
+      },
       pickCollider, beginDrag, endDrag, get dragging() { return !!drag; },
       moveDrag(point) { if (drag && !disposed) drag.target.copy(point); },
     };

@@ -24,7 +24,7 @@ test('rounded isolated pieces receive smaller hulls without the old box corners'
         assert.ok(Math.abs(value) <= source.boxes[i].size[axis] / 2 + 2e-5);
       });
     }
-    for (const i of [0, 1, 6]) {
+    for (const i of [0, 1, 3]) {
       const { size } = source.boxes[i], collider = view.rig.colliders[i];
       assert.ok(collider.volume < size.reduce((a, b) => a * b, 1) * .35);
       const body = view.rig.entries[i].body, rotation = new Quaternion().copy(body.getRotation()).normalize();
@@ -65,10 +65,10 @@ test('changing smoothing and spread refits the hulls and disposes the previous d
     for (const collider of before.colliders) collider.geometry.addEventListener('dispose', () => disposed++);
     const smoother = mergeMeshSetup(setup, { pipeline: { smoothingIterations: 8 } });
     view.regenerate(undefined, smoother);
-    assert.equal(disposed, 7); assert.notEqual(view.rig, before);
+    assert.equal(disposed, 5); assert.notEqual(view.rig, before);
     assert.ok(view.rig.colliders.reduce((sum, collider) => sum + collider.volume, 0) < volume);
     const spaced = createBoxUnion(source.seed, 4); view.setMesh(spaced.mesh, setup, spaced);
-    assert.equal(physics.entries.length, 7); assert.equal(physics.joints.length, 2);
-    assert.equal(view.rig.colliders.filter(Boolean).length, 7);
+    assert.equal(physics.entries.length, 5); assert.equal(physics.joints.length, 1);
+    assert.equal(view.rig.colliders.filter(Boolean).length, 5);
   } finally { dispose(); }
 });
