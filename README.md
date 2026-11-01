@@ -1,4 +1,4 @@
-# Night Romp · 2026-10-29
+# 2026-10-29
 
 Copied from `../2026-10-22` as the foundation for the new sketch.
 
