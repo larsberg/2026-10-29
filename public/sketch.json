@@ -1,6 +1,6 @@
 {
   "id": "2026-10-29",
-  "title": "2026-10-29",
+  "title": "Night Romp",
   "created": "2026-10-29",
   "entry": "./",
   "protocol": "sketch-player:v1",
@@ -13,8 +13,8 @@
     "save-setup",
     "load-setup"
   ],
-  "sound": "none",
-  "description": "A new sketch with Box3D physics, Strudel audio tools, and the shared studio controls.",
+  "sound": "gesture-required",
+  "description": "A herd of seven seeded, articulated bodies tumbles and leapfrogs to an original six-minute generative composition. Concentric palette bands follow their colliders across the ground, harmony shifts the textures, and the colors change every two bars beneath a following spotlight.",
   "schemaVersion": 1,
   "date": "2026-10-29",
   "datePrecision": "day",
@@ -22,21 +22,26 @@
   "tags": [
     "threejs",
     "physics",
+    "articulated-bodies",
+    "generative-audio",
+    "audio-reactive",
+    "distance-field",
     "strudel",
     "interactive"
   ],
   "madeWith": [
     "threejs",
     "box3d",
+    "manifold",
     "strudel",
     "web-audio"
   ],
-  "audio": "none",
+  "audio": "gesture-required",
   "thumbnail": {
-    "src": "./thumbnail.png",
-    "width": 1200,
-    "height": 900,
-    "alt": "2026-10-29 sketch placeholder"
+    "src": "./thumbnail.jpg",
+    "width": 1600,
+    "height": 1200,
+    "alt": "Seven faceted, striped bodies gathered on concentric colored ground bands under a spotlight against a black background."
   },
   "embed": {
     "src": "./?embed=1",
