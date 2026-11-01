@@ -43,7 +43,7 @@
     },
     "directional": {
       "enabled": false,
-      "color": "#66c7f4",
+      "color": "#59c9a5",
       "intensity": 2.6,
       "offsetX": -3,
       "height": 7,
@@ -55,8 +55,8 @@
     },
     "hemisphere": {
       "enabled": false,
-      "skyColor": "#ffffff",
-      "groundColor": "#ff1053",
+      "skyColor": "#23395b",
+      "groundColor": "#fffd98",
       "intensity": 0.29,
       "yaw": 0,
       "tilt": 0
@@ -65,14 +65,14 @@
       "enabled": true,
       "intensity": 1,
       "rotation": 0,
-      "backgroundColor": "#6c6ea0",
-      "keyColor": "#6c6ea0",
-      "stripColor": "#ff1053",
-      "fillColor": "#66c7f4",
-      "rimColor": "#c1cad6",
-      "accentColor": "#c1cad6",
-      "bounceColor": "#ffffff",
-      "backColor": "#ffffff"
+      "backgroundColor": "#23395b",
+      "keyColor": "#23395b",
+      "stripColor": "#d81e5b",
+      "fillColor": "#d81e5b",
+      "rimColor": "#59c9a5",
+      "accentColor": "#b9e3c6",
+      "bounceColor": "#b9e3c6",
+      "backColor": "#fffd98"
     },
     "occlusion": {
       "enabled": true,
@@ -380,7 +380,7 @@
     "followSmoothing": 0.45,
     "yaw": 163.5398762646,
     "elevation": 11.9731113792,
-    "distance": 34.5139973878,
+    "distance": 22.6752241685,
     "offsetX": 0,
     "offsetY": 0,
     "offsetZ": 0,
