@@ -1,0 +1,31 @@
+{
+  "id": "2026-10-29",
+  "title": "2026-10-29",
+  "slug": "2026-10-29",
+  "aliases": [],
+  "hidden": false,
+  "date": "2026-10-29",
+  "datePrecision": "day",
+  "thumbnail": {
+    "src": "https://larsberg.github.io/2026-10-29/thumbnail.jpg",
+    "width": 1600,
+    "height": 1200,
+    "alt": "Seven faceted, striped bodies gathered on concentric colored ground bands under a spotlight against a black background."
+  },
+  "runtimeUrl": "https://larsberg.github.io/2026-10-29/?embed=1",
+  "standaloneUrl": "https://larsberg.github.io/2026-10-29/",
+  "iframeAllow": "autoplay; fullscreen",
+  "madeWith": [
+    "threejs",
+    "box3d",
+    "manifold",
+    "strudel",
+    "web-audio"
+  ],
+  "sidebarPattern": "waves",
+  "sidebarTone": "dark",
+  "sidebar": {
+    "textColor": "#ffffff",
+    "backgroundColor": "#000000af"
+  }
+}

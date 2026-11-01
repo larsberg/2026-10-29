@@ -1,0 +1,74 @@
+{
+  "schemaVersion": 1,
+  "title": "2026-10-29",
+  "sketches": [
+    {
+      "id": "2026-10-29",
+      "title": "2026-10-29",
+      "created": "2026-10-29",
+      "entry": "./",
+      "protocol": "sketch-player:v1",
+      "capabilities": [
+        "play",
+        "pause",
+        "reset",
+        "get-setup",
+        "setup",
+        "save-setup",
+        "load-setup"
+      ],
+      "sound": "gesture-required",
+      "description": "A herd of seven seeded, articulated bodies tumbles and leapfrogs to an original six-minute generative composition. Concentric palette bands follow their colliders across the ground, harmony shifts the textures, and the colors change every two bars beneath a following spotlight.",
+      "schemaVersion": 1,
+      "date": "2026-10-29",
+      "datePrecision": "day",
+      "author": "Lars Berg",
+      "tags": [
+        "threejs",
+        "physics",
+        "articulated-bodies",
+        "generative-audio",
+        "audio-reactive",
+        "distance-field",
+        "strudel",
+        "interactive"
+      ],
+      "madeWith": [
+        "threejs",
+        "box3d",
+        "manifold",
+        "strudel",
+        "web-audio"
+      ],
+      "audio": "gesture-required",
+      "thumbnail": {
+        "src": "./thumbnail.jpg",
+        "width": 1600,
+        "height": 1200,
+        "alt": "Seven faceted, striped bodies gathered on concentric colored ground bands under a spotlight against a black background."
+      },
+      "embed": {
+        "src": "./?embed=1",
+        "allow": [
+          "autoplay",
+          "fullscreen"
+        ],
+        "resize": "container",
+        "controls": [
+          "play",
+          "pause",
+          "reset",
+          "get-setup",
+          "setup",
+          "save-setup",
+          "load-setup"
+        ],
+        "protocol": "sketch-player:v1",
+        "parentOriginParameter": "parentOrigin"
+      },
+      "repository": "https://github.com/larsberg/2026-10-29",
+      "url": "https://larsberg.github.io/2026-10-29/",
+      "manifest": "./sketch.json"
+    }
+  ]
+}

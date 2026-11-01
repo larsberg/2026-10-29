@@ -1,0 +1,399 @@
+{
+  "version": 1,
+  "sketch": "2026-10-29",
+  "materials": {
+    "mesh": {
+      "metalness": 0,
+      "roughness": 0.8,
+      "emissiveIntensity": 0,
+      "envMapIntensity": 0.45,
+      "opacity": 1,
+      "color": "#ffffff",
+      "emissive": "#ffffff",
+      "wireframe": false,
+      "flatShading": true,
+      "normalMix": 0
+    },
+    "text": {
+      "metalness": 0,
+      "roughness": 1,
+      "emissiveIntensity": 0,
+      "envMapIntensity": 0,
+      "opacity": 1,
+      "color": "#000000",
+      "emissive": "#ffffff",
+      "wireframe": false,
+      "flatShading": false
+    }
+  },
+  "lighting": {
+    "spotlight": {
+      "enabled": true,
+      "color": "#ffffff",
+      "intensity": 2400,
+      "offsetX": -3,
+      "height": 26,
+      "offsetZ": 4,
+      "angle": 50,
+      "penumbra": 0.5,
+      "castShadow": true,
+      "softness": 3,
+      "shadowBias": -0.0001,
+      "normalBias": 0.025
+    },
+    "directional": {
+      "enabled": false,
+      "color": "#fcfaf9",
+      "intensity": 2.6,
+      "offsetX": -3,
+      "height": 7,
+      "offsetZ": 4,
+      "castShadow": false,
+      "softness": 3,
+      "shadowBias": -0.0003,
+      "normalBias": 0.025
+    },
+    "hemisphere": {
+      "enabled": false,
+      "skyColor": "#5e5e5e",
+      "groundColor": "#333333",
+      "intensity": 0.29,
+      "yaw": 0,
+      "tilt": 0
+    },
+    "environment": {
+      "enabled": true,
+      "intensity": 1,
+      "rotation": 0,
+      "backgroundColor": "#333333",
+      "keyColor": "#5e5e5e",
+      "stripColor": "#5e5e5e",
+      "fillColor": "#48e5c2",
+      "rimColor": "#48e5c2",
+      "accentColor": "#f3d3bd",
+      "bounceColor": "#f3d3bd",
+      "backColor": "#fcfaf9"
+    },
+    "occlusion": {
+      "enabled": true,
+      "intensity": 2.34,
+      "radius": 2.17,
+      "aoOnly": false
+    }
+  },
+  "info": {
+    "upperLeft": {
+      "type": "doc",
+      "content": [
+        {
+          "type": "heading",
+          "attrs": {
+            "textAlign": "left",
+            "level": 1
+          },
+          "content": [
+            {
+              "type": "text",
+              "text": "2026-10-29"
+            }
+          ]
+        }
+      ]
+    },
+    "upperRight": {
+      "type": "doc",
+      "content": [
+        {
+          "type": "paragraph",
+          "attrs": {
+            "textAlign": "right"
+          },
+          "content": [
+            {
+              "type": "text",
+              "text": "Drag to orbit · scroll to zoom."
+            }
+          ]
+        }
+      ]
+    },
+    "lowerLeft": {
+      "type": "doc",
+      "content": [
+        {
+          "type": "paragraph",
+          "attrs": {
+            "textAlign": "left"
+          },
+          "content": [
+            {
+              "type": "text",
+              "text": "Lars Berg"
+            }
+          ]
+        }
+      ]
+    },
+    "lowerRight": {
+      "type": "doc",
+      "content": [
+        {
+          "type": "paragraph",
+          "attrs": {
+            "textAlign": "right"
+          },
+          "content": [
+            {
+              "type": "text",
+              "text": "Three.js · Box3D · Strudel"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "paletteLibrary": {
+    "approved": [
+      "copper-blue",
+      "glacier",
+      "solar",
+      "orchid",
+      "citrus",
+      "ember",
+      "ink",
+      "pearl",
+      "sketchbook-006ba6-0496ff-ffbc42-d81159-8f2d56",
+      "sketchbook-011627-f71735-41ead4-fdfffc-ff9f1c",
+      "sketchbook-6ccff6-001011-757780-fffffc-98ce00",
+      "sketchbook-0a2463-3e92cc-fffaff-d8315b-1e1b18",
+      "sketchbook-373f51-008dd5-dfbbb1-f56476-e43f6f",
+      "sketchbook-0c0f0a-ff206e-fbff12-41ead4-ffffff",
+      "sketchbook-003049-d62828-f77f00-fcbf49-eae2b7",
+      "sketchbook-004777-a30000-ff7700-efd28d-00afb5",
+      "sketchbook-011627-ff0022-41ead4-fdfffc-b91372",
+      "sketchbook-012438-9a7415-fff9f9-ddffff-cedd77",
+      "sketchbook-03256c-2541b2-1768ac-06bee1-ffffff",
+      "sketchbook-042a2b-5eb1bf-54f2f2-fcfcfc-f4e04d",
+      "sketchbook-0b3954-bfd7ea-ff6663-e0ff4f-fefffe",
+      "sketchbook-1446a0-db3069-f5d547-ebebd3-3c3c3b",
+      "sketchbook-1a535c-4ecdc4-f7fff7-ff6b6b-ffe66d",
+      "sketchbook-1c3144-d00000-ffba08-a2aebb-3f88c5",
+      "sketchbook-1f271b-19647e-28afb0-f4d35e-ee964b",
+      "sketchbook-256eff-46237a-3ddc97-fcfcfc-ff495c",
+      "sketchbook-26547c-ef476f-ffd166-06d6a0-fcfcfc",
+      "sketchbook-320e3b-e56399-7f96ff-a6cfd5-dbfcff",
+      "sketchbook-333333-48e5c2-fcfaf9-f3d3bd-5e5e5e",
+      "sketchbook-340068-ff6978-fffcf9-b1ede8-6d435a",
+      "sketchbook-41d3bd-fffff2-791e94-de6449-407899",
+      "sketchbook-51e5ff-440381-ec368d-ffa5a5-ffd6c0",
+      "sketchbook-540d6e-ee4266-ffd23f-3bceac-0ead69",
+      "sketchbook-540d6e-ee4266-ffd23f-f3fcf0-1f271b",
+      "sketchbook-541388-d90368-f1e9da-2e294e-ffd400",
+      "sketchbook-565554-2e86ab-f6f5ae-f5f749-f24236",
+      "sketchbook-5dfdcb-7cc6fe-f4faff-8789c0-08090a",
+      "sketchbook-6699cc-fff275-ff8c42-ff3c38-a23e48",
+      "sketchbook-cea892-ffe74c-ff5964-ffffff-35a7ff",
+      "sketchbook-db2763-b0db43-12eaea-bce7fd-c492b1",
+      "sketchbook-db5461-ffd9ce-593c8f-8ef9f3-171738",
+      "sketchbook-eac435-345995-e40066-03cea4-fb4d3d",
+      "sketchbook-ed254e-f9dc5c-f4fffd-011936-465362",
+      "sketchbook-edae49-d1495b-00798c-30638e-003d5b",
+      "sketchbook-ee6352-08b2e3-efe9f4-57a773-484d6d",
+      "sketchbook-ef476f-ffd166-06d6a0-118ab2-073b4c",
+      "sketchbook-ef798a-f7a9a8-7d82b8-613f75-e5c3d1",
+      "sketchbook-efefef-04dbac-3454d1-383838-d1345b",
+      "sketchbook-f08700-f49f0a-efca08-00a6a6-bbdef0",
+      "sketchbook-f0a202-f18805-d95d39-0e1428-7b9e89",
+      "sketchbook-f46036-2e294e-1b998b-e71d36-c5d86d",
+      "sketchbook-f4f1de-e07a5f-3d405b-81b29a-f2cc8f",
+      "sketchbook-f6e8ea-ef626c-22181c-312f2f-84dccf",
+      "sketchbook-f6f7eb-e94f37-393e41-3f88c5-44bba4",
+      "sketchbook-f8ffe5-06d6a0-1b9aaa-ef476f-ffc43d",
+      "sketchbook-f9dbbd-ffa5ab-da627d-a53860-450920",
+      "sketchbook-fbfef9-191923-0e79b2-bf1363-f39237",
+      "sketchbook-fcfc62-feffea-c9c9c9-a3a3a3-424242",
+      "sketchbook-fcfcfc-f7567c-fffae3-99e1d9-5d576b",
+      "sketchbook-ff1053-6c6ea0-66c7f4-c1cad6-ffffff",
+      "sketchbook-ff5e5b-d8d8d8-ffffea-00cecb-ffed66",
+      "sketchbook-ff6666-ccff66-5d2e8c-2ec4b6-f1e8b8",
+      "sketchbook-ff6700-ebebeb-c0c0c0-3a6ea5-004e98",
+      "sketchbook-ff934f-c2e812-91f5ad-ffffff-bfcbc2",
+      "sketchbook-ffa400-009ffd-2a2a72-232528-eaf6ff",
+      "sketchbook-fffd98-b9e3c6-59c9a5-d81e5b-23395b"
+    ],
+    "rejected": [
+      "sketchbook-011638-364156-cdcdcd-dff8eb-214e34",
+      "sketchbook-080708-3772ff-df2935-fdca40-e6e8e6",
+      "sketchbook-23ce6b-272d2d-f6f8ff-a846a0-50514f",
+      "sketchbook-26547c-ef476f-ffd166-06d6a0-fffcf9",
+      "sketchbook-363537-0cce6b-dced31-ef2d56-ed7d3a"
+    ],
+    "generated": []
+  },
+  "lines": {
+    "enabled": true,
+    "spacing": 1.65,
+    "angle": 47,
+    "tilt": 45,
+    "offset": 0,
+    "offsetSpeed": -0.763,
+    "strength": 1,
+    "seed": 3
+  },
+  "boxes": {
+    "spread": 2.45
+  },
+  "pipeline": {
+    "enabled": true,
+    "seed": 732234,
+    "triangulateEnabled": true,
+    "initialDiamondDualEnabled": true,
+    "faceCenterDualEnabled": false,
+    "averageVerticesEnabled": false,
+    "insetEnabled": false,
+    "insetScale": 0.5,
+    "excludeInitialBorderTriangles": true,
+    "subdivisionEnabled": false,
+    "subdivisionIterations": 1,
+    "diamondDualEnabled": false,
+    "hexelateTriangulateEnabled": true,
+    "hexelateEnabled": true,
+    "finalAverageVerticesEnabled": true,
+    "smoothingIterations": 3,
+    "smoothingStrength": 0.82
+  },
+  "rigidBody": {
+    "gravity": 100,
+    "friction": 0.55
+  },
+  "interaction": {
+    "grabForce": 500
+  },
+  "herd": {
+    "count": 7,
+    "jumpPower": 0.783,
+    "smallJumpPercent": 29
+  },
+  "audio": {
+    "enabled": true,
+    "bpm": 128,
+    "volume": 0.55,
+    "drums": 0.7,
+    "bass": 0.92,
+    "keys": 0.72,
+    "melody": 0.4,
+    "instruments": {
+      "kick": {
+        "sound": "sub",
+        "level": 0.95,
+        "decay": 0.46,
+        "cutoff": 850,
+        "resonance": 0.45,
+        "drive": 0.1,
+        "reverb": 0,
+        "delay": 0,
+        "delayBeats": 0.5,
+        "feedback": 0.3
+      },
+      "snare": {
+        "sound": "rim",
+        "level": 0.58,
+        "decay": 0.65,
+        "cutoff": 2800,
+        "resonance": 0.45,
+        "drive": 0,
+        "reverb": 0.08,
+        "delay": 0.045,
+        "delayBeats": 0.75,
+        "feedback": 0.16
+      },
+      "hat": {
+        "sound": "closed",
+        "level": 0.38,
+        "decay": 0.65,
+        "cutoff": 6200,
+        "resonance": 0.45,
+        "drive": 0,
+        "reverb": 0.04,
+        "delay": 0,
+        "delayBeats": 0.5,
+        "feedback": 0.3
+      },
+      "bass": {
+        "sound": "sub",
+        "level": 1.1,
+        "decay": 0.8,
+        "cutoff": 190,
+        "resonance": 0.45,
+        "drive": 0.035,
+        "reverb": 0,
+        "delay": 0,
+        "delayBeats": 0.5,
+        "feedback": 0.3
+      },
+      "keys": {
+        "sound": "electric",
+        "level": 0.38,
+        "decay": 0.62,
+        "cutoff": 4300,
+        "resonance": 0.45,
+        "drive": 0,
+        "reverb": 0.18,
+        "delay": 0.035,
+        "delayBeats": 0.75,
+        "feedback": 0.12
+      },
+      "melody": {
+        "sound": "pluck",
+        "level": 0.65,
+        "decay": 0.7,
+        "cutoff": 3600,
+        "resonance": 0.45,
+        "drive": 0,
+        "reverb": 0.2,
+        "delay": 0.14,
+        "delayBeats": 0.5,
+        "feedback": 0.42
+      }
+    }
+  },
+  "appearance": {
+    "wireframeColor": "#ffffff"
+  },
+  "floor": {
+    "roughness": 0.85,
+    "depth": 0.004,
+    "tileSize": 4.6,
+    "color": "#ffffff"
+  },
+  "fog": {
+    "enabled": false,
+    "color": "#000000",
+    "near": 10,
+    "far": 30
+  },
+  "infoLayout": {
+    "size": 3,
+    "column": -1,
+    "row": -1
+  },
+  "camera": {
+    "follow": true,
+    "optimizedTextures": false,
+    "followSmoothing": 0.45,
+    "yaw": 139.6779836261,
+    "elevation": 12.124956002,
+    "distance": 30.3446065777,
+    "offsetX": 0,
+    "offsetY": 0,
+    "offsetZ": 0,
+    "fov": 42
+  },
+  "visibility": {
+    "surface": true,
+    "wireframe": false,
+    "colliders": false,
+    "fps": true,
+    "text": true
+  }
+}
