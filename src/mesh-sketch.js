@@ -78,7 +78,8 @@ export async function mountMesh(root,{ui=false}={}) {
   herdMotion=createHerdMotion(physics,views,ground,{getBeat:()=>marchAudio.beat,getGroove:beat=>marchAudio.readMotion(beat),...settings.herd});
   let scoreSeed=settings.pipeline.seed;
   const recording=bindRecordingControls(shell,renderer.domElement,marchAudio);
-  const paletteMotion=createStudioPaletteMotion({environment,scene,renderer,sun,hemisphere,spotlight,lighting:settings.lighting});
+  const paletteMotion=createStudioPaletteMotion({environment,scene,renderer,sun,hemisphere,spotlight,lighting:settings.lighting,
+    onAdvance:steps=>lightingControls.advancePalette(steps)});
   const setupAbort=new AbortController(),followTarget=new THREE.Vector3(),worldOrigin=new THREE.Vector3();
   const groupCenter=()=>views.getCenter(followTarget);
   const cameraFollow=createCameraFollow(groupCenter()),follow=cameraFollow.position;
@@ -90,7 +91,7 @@ export async function mountMesh(root,{ui=false}={}) {
     lighting=>{
       paletteMotion.configure(lighting);
       lineProjection.configure(settings.lines,lighting.environment);
-      settings.fog.color=lighting.environment.backgroundColor;panel?.set(settings,'fog');
+      settings.fog.color='#000000';panel?.set(settings,'fog');
       meshMaterial.envMap=textProp.material.envMap=environment.texture;
       views.configure(settings);
     },settings.lighting,spotlight);
@@ -115,12 +116,12 @@ export async function mountMesh(root,{ui=false}={}) {
   controls.addEventListener('change',updateCameraControls);
   function apply(value) {
     const next=mergeMeshSetup(getSetup(),value);
-    if(value.version===undefined&&value.fog?.color!==undefined)next.lighting.environment.backgroundColor=next.fog.color;
     const currentCamera=getSetup().camera;
     const restoringView=value.version!==undefined,followChanged=next.camera.follow!==currentCamera.follow;
     const cameraChanged=restoringView||followChanged||['yaw','elevation','distance','offsetX','offsetY','offsetZ'].some(key=>next.camera[key]!==currentCamera[key]);
     const meshChanged=next.herd.count!==settings.herd.count||next.boxes.spread!==settings.boxes.spread||JSON.stringify(next.pipeline)!==JSON.stringify(settings.pipeline);
     settings=next;
+    settings.fog.color='#000000';
     lineProjection.configure(settings.lines,settings.lighting.environment);
     physics.configure(settings.rigidBody);
     herdMotion.configure(settings.herd);
@@ -219,7 +220,7 @@ export async function mountMesh(root,{ui=false}={}) {
     if(boxUnions?.length!==settings.herd.count||boxUnions?.[0].seed!==settings.pipeline.seed||boxUnions?.[0].spread!==settings.boxes.spread)boxUnions=createHerdSources(settings.pipeline.seed,settings.boxes.spread,settings.herd.count);
     views.setSources(boxUnions,settings);
     if(scoreSeed!==settings.pipeline.seed){scoreSeed=settings.pipeline.seed;void marchAudio.setPattern(createHerdScore(scoreSeed));}
-    marchAudio.restart();herdMotion.reset(settings.pipeline.seed);lineProjection.resetMotion();
+    marchAudio.restart();herdMotion.reset(settings.pipeline.seed);lineProjection.resetMotion();paletteMotion.resetBeat();
     dirty=true;syncMeshStatus();
     // Keep the saved orbit centered on the installed surface.
     if(settings.camera.follow){
@@ -235,7 +236,7 @@ export async function mountMesh(root,{ui=false}={}) {
     viewportWidth=w;viewportHeight=h;
     renderer.setSize(w,h);effects.resize(w,h);
     camera.aspect=w/h;camera.zoom=Math.min(1,w/h);camera.updateProjectionMatrix();
-    regenerate();
+    // Resize only the view; keep the physical herd and musical timeline intact.
     // Resizing clears the canvas and postprocessing buffers. Repaint before
     // the browser composites this resized frame.
     renderScene();startup.reveal();
@@ -265,7 +266,7 @@ export async function mountMesh(root,{ui=false}={}) {
     }
     cameraFollow.update(camera,controls,groupCenter(),settings.camera.follow,followSuspended(),dt,settings.camera.followSmoothing);
     controls.update();
-    paletteMotion.update(dt);
+    paletteMotion.update(dt,running&&!setupBusy?marchAudio.beat:undefined);
     lightingControls.updatePosition(groupCenter());
     for(const light of [sun,spotlight])if(light.visible&&light.castShadow)fitMeshShadows(light,views.surfaces);
     renderScene();recording.recorder.captureFrame();startup.reveal();stats?.update();

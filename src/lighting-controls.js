@@ -8,7 +8,7 @@ export function lightingControlsMarkup() {
       <select id="studio-palette"><option value="custom" disabled>Custom</option>${studioPalettes.map(p => `<option value="${p.id}">${p.label}</option>`).join('')}</select>
       <button type="button" class="palette-next" aria-label="Next palette" title="Next palette">→</button>
     </span></div>
-    <p class="camera-hint">Palettes color the projected lines, reflection studio, scene background, and lights. Automatic palette changes are off; manual lighting changes retain 0.3-second fades. Studio background also sets the fog color. Edit colors below to make a custom palette; Save retains it.</p>
+    <p class="camera-hint">Palettes advance to the next preset every two musical bars. They color the projected lines, reflection studio, and lights; the scene background and fog stay black. Lighting changes fade over 0.3 seconds. Edit colors below to make a custom palette; Save retains it.</p>
     ` + lightingGroups.map(({ key, label, fields }, index) => `
     <details class="material-group" ${index === 0 ? "open" : ""}>
       <summary>${label}</summary>
@@ -91,6 +91,11 @@ export function bindLightingControls(root, directional, hemisphere, materials, g
       input.addEventListener("input", () => { apply(); onChange(); });
   const controls = {
     get: () => structuredClone(settings), updatePosition, refreshEnvironment,
+    advancePalette(steps = 1) {
+      const start = paletteIndex < 0 ? (steps > 0 ? -1 : 0) : paletteIndex;
+      const next = ((start + steps) % studioPalettes.length + studioPalettes.length) % studioPalettes.length;
+      choosePalette(studioPalettes[next].id);
+    },
     set(value) {
       for (const { key } of lightingGroups)
         for (const [name, input] of Object.entries(inputs[key])) {
@@ -103,11 +108,7 @@ export function bindLightingControls(root, directional, hemisphere, materials, g
   function choosePalette(id) { controls.set(applyStudioPalette(settings, id)); onChange(); }
   paletteSelect.addEventListener('change', () => choosePalette(paletteSelect.value));
   for (const [selector, direction] of [['.palette-previous', -1], ['.palette-next', 1]])
-    root.querySelector(selector).addEventListener('click', () => {
-      paletteIndex = paletteIndex < 0 ? (direction > 0 ? 0 : studioPalettes.length - 1)
-        : (paletteIndex + direction + studioPalettes.length) % studioPalettes.length;
-      choosePalette(studioPalettes[paletteIndex].id);
-    });
+    root.querySelector(selector).addEventListener('click', () => controls.advancePalette(direction));
   controls.set(initialLighting);
   return controls;
 }

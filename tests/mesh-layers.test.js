@@ -83,7 +83,7 @@ test('layering retains valid boundaries on square, portrait, and landscape grids
   }
 });
 
-test('resize rebuilds the wall operation layers and clears manual edit history',()=>{
+test('explicit regeneration rebuilds operation layers and clears edits regardless of viewport orientation',()=>{
   const view=createMeshView(new Scene()),camera=new PerspectiveCamera(42,1,.1,1000),settings=defaultMeshSetup();
   Object.assign(settings.pipeline,{initialDiamondDualEnabled:true,hexelateEnabled:true,finalAverageVerticesEnabled:true});
   camera.position.set(0,0,7);camera.lookAt(0,0,0);camera.updateMatrixWorld();

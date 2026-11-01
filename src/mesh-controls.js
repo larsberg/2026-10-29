@@ -75,7 +75,7 @@ export function meshControlsMarkup() {
             <p class="control-heading">Dual mesh</p>
             <div class="field-actions"><button type="button" data-mesh-action="dualDiamond">Dialate / Diamond</button><button type="button" data-mesh-action="hexelate">Hexelate</button></div>
             <p class="camera-hint">Dual operations replace the whole mesh. Dialate creates a diamond across each shared edge and keeps triangles at open boundaries. Hexelate splits faces and joins their centers around each vertex, preserving the original outline.</p>
-            <p class="camera-hint">Resize, Reload, and Reset rebuild the operation layers and clear manual edits. Save retains layer and transform controls.</p>
+            <p class="camera-hint">Reload and Reset rebuild the operation layers and clear manual edits. Resizing preserves the herd and playback. Save retains layer and transform controls.</p>
             <p class="control-heading">Show</p><div class="visibility-controls">
               ${meshFields.visibility.filter(([key]) => !['fps','colliders'].includes(key)).map(field => fieldMarkup('visibility', field)).join('')}
             </div><p class="mesh-stats"></p>
@@ -104,7 +104,7 @@ export function meshControlsMarkup() {
           </section>
           <section id="panel-lighting" role="tabpanel" aria-labelledby="tab-lighting" hidden>
             ${lightingControlsMarkup().replaceAll('boxes', 'mesh')}
-            <details class="material-group" open><summary>Fog</summary>${fields('fog')}<p class="camera-hint">Fades distant surfaces into the fog color, even with the lights off. Start and end distances are measured from the camera.</p></details>
+            <details class="material-group" open><summary>Fog</summary>${meshFields.fog.filter(([key]) => key !== 'color').map(field => fieldMarkup('fog', field)).join('')}<p class="camera-hint">Fades distant surfaces into the fixed black background. Start and end distances are measured from the camera.</p></details>
           </section>
           <section id="panel-camera" role="tabpanel" aria-labelledby="tab-camera" hidden>
             <p class="control-heading">Camera</p><p class="camera-hint">Drag empty space to orbit; scroll or pinch to zoom. Follow uses the surface center, or the origin while the scene is empty. Offsets are relative to that center with Follow on, or world coordinates with Follow off. Your view and Follow setting are saved.</p>
