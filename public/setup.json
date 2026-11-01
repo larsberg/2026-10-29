@@ -76,7 +76,7 @@
     },
     "occlusion": {
       "enabled": true,
-      "intensity": 1.34,
+      "intensity": 2.34,
       "radius": 2.17,
       "aoOnly": false
     }
