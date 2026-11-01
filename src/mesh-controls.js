@@ -48,6 +48,9 @@ export function meshControlsMarkup() {
             <p class="control-heading">Herd movement</p>
             ${fields('herd')}
             <p class="camera-hint">0 stops new jumps; 1 is the original full force. The herd keeps shuffling between jumps.</p>
+            <p class="control-heading">Interaction</p>
+            ${fields('interaction')}
+            <p class="camera-hint">Limits how hard you can pull and fling a body. 0 disables grabbing; 10,000 restores the original strength. Musical jumps use their own force controls above.</p>
             <p class="control-heading">Box union</p>
             <p class="camera-hint">Each blob is made from five random boxes with its own seed. The saved herd seed reproduces every shape. New variation generates a new herd.</p>
             <div class="camera-controls">${fieldMarkup('pipeline', meshFields.pipeline.find(([key]) => key === 'seed'))}</div>

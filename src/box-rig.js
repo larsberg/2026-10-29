@@ -1,5 +1,6 @@
 import { Bone, BufferGeometry, EdgesGeometry, Float32BufferAttribute, Group, LineBasicMaterial, LineSegments, Matrix4, Quaternion, Skeleton, Uint16BufferAttribute, Vector3 } from 'three';
 import { fitBoxColliders, MAX_COLLIDER_VERTICES } from './collider-fit.js';
+import { DEFAULT_GRAB_FORCE, MAX_GRAB_FORCE } from './interaction-settings.js';
 
 // Connect each overlapping cluster with a sparse tree, preferring its largest
 // shared regions. Separate clusters and isolated boxes get no connecting joint.
@@ -77,7 +78,7 @@ export function createBoxRig(source, topology, surface, physics, onDeform) {
     line.matrixAutoUpdate = false; line.frustumCulled = false; line.renderOrder = 20; colliderGroup.add(line); return line;
   });
   const entries = [], joints = [];
-  let skeleton, unsubscribe, unsubscribeStep, drag, disposed = false;
+  let skeleton, unsubscribe, unsubscribeStep, drag, disposed = false, grabForce = DEFAULT_GRAB_FORCE;
   const rayOrigin = new Vector3(), rayTranslation = new Vector3();
   const bodyPosition = new Vector3(), bodyRotation = new Quaternion(), unitScale = new Vector3(1, 1, 1);
   function pickCollider(caster) {
@@ -102,23 +103,33 @@ export function createBoxRig(source, topology, surface, physics, onDeform) {
     physics.removeJoint(previous.joint); physics.removeBody(previous.anchor);
   }
   function beginDrag(link, worldPoint) {
-    if (disposed || !entries.includes(link)) return false;
+    if (disposed || grabForce === 0 || !entries.includes(link)) return false;
     endDrag();
     const anchor = physics.addBody({ body: { type: 'kinematic', position: worldPoint } });
     try {
-      const mass = entries.reduce((sum, entry) => sum + entry.body.getMass(), 0);
+      const mass = Math.max(1, entries.reduce((sum, entry) => sum + entry.body.getMass(), 0));
       // Pull the picked point without locking rotation. The existing joints
       // transmit the pull through the cluster and its skinning bones.
       const joint = physics.addMotorJoint(anchor, link, {
         localFrameB: { position: link.body.getLocalPoint(worldPoint) },
         linearHertz: 30, linearDampingRatio: .85,
-        maxSpringForce: Math.max(1, mass) * 10000,
+        maxSpringForce: mass * grabForce,
         maxSpringTorque: 0, maxVelocityForce: 0, maxVelocityTorque: 0, collideConnected: false,
       });
-      drag = { link, anchor, joint, target: worldPoint.clone() };
+      drag = { link, anchor, joint, mass, target: worldPoint.clone() };
       for (const { body } of entries) body.setAwake(true);
       return true;
     } catch (error) { physics.removeBody(anchor); throw error; }
+  }
+  function setGrabForce(value = DEFAULT_GRAB_FORCE) {
+    if (!Number.isFinite(value) || value < 0 || value > MAX_GRAB_FORCE) throw new Error('Invalid Grab / throw force.');
+    if (value === grabForce || disposed) return;
+    grabForce = value;
+    if (value === 0) endDrag();
+    else if (drag) {
+      drag.joint.options.maxSpringForce = drag.mass * value;
+      drag.joint.joint.setMaxSpringForce(drag.mass * value);
+    }
   }
   function dispose() {
     if (disposed) return; endDrag(); disposed = true; unsubscribe?.(); unsubscribeStep?.();
@@ -188,7 +199,7 @@ export function createBoxRig(source, topology, surface, physics, onDeform) {
         if (show && !colliderGroup.visible) syncColliders();
         colliderGroup.visible = show;
       },
-      pickCollider, beginDrag, endDrag, get dragging() { return !!drag; },
+      pickCollider, beginDrag, endDrag, setGrabForce, get dragging() { return !!drag; },
       moveDrag(point) { if (drag && !disposed) drag.target.copy(point); },
     };
   } catch (error) { dispose(); throw error; }

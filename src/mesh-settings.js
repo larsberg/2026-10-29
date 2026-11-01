@@ -11,6 +11,7 @@ import { boxFields } from './box-settings.js';
 import { DEFAULT_JUMP_POWER, DEFAULT_SMALL_JUMP_PERCENT, DEFAULT_HERD_COUNT } from './herd-rhythm.js';
 import { projectedLineFields } from './projected-lines.js';
 import { defaultPaletteLibrary, validatePaletteLibrary } from './palette-library.js';
+import { interactionFields } from './interaction-settings.js';
 
 export const meshFields = {
   lines: projectedLineFields,
@@ -35,6 +36,7 @@ export const meshFields = {
     ['smoothingStrength', 'Smoothing strength', 0.5, 0.01, 1, 0.01],
   ],
   rigidBody: rigidBodyFields,
+  interaction: interactionFields,
   herd: [
     ['count', 'Number of bodies', DEFAULT_HERD_COUNT, 1, 11, 1],
     ['jumpPower', 'Jump force', DEFAULT_JUMP_POWER, 0, 1, .001],
@@ -114,6 +116,7 @@ export function validateMeshSetup(value) {
     lines: value.lines === undefined ? result.lines : value.lines,
     boxes: value.boxes === undefined ? result.boxes : value.boxes,
     herd: value.herd === undefined ? result.herd : value.herd,
+    interaction: value.interaction === undefined ? result.interaction : value.interaction,
     pipeline: value.pipeline === undefined ? result.pipeline : value.pipeline,
     rigidBody:validateRigidBody(value.rigidBody) };
   if (value.lines && value.lines.seed === undefined) value.lines = { ...value.lines, seed: result.lines.seed };

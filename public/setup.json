@@ -43,7 +43,7 @@
     },
     "directional": {
       "enabled": false,
-      "color": "#59c9a5",
+      "color": "#fcfaf9",
       "intensity": 2.6,
       "offsetX": -3,
       "height": 7,
@@ -55,8 +55,8 @@
     },
     "hemisphere": {
       "enabled": false,
-      "skyColor": "#23395b",
-      "groundColor": "#fffd98",
+      "skyColor": "#5e5e5e",
+      "groundColor": "#333333",
       "intensity": 0.29,
       "yaw": 0,
       "tilt": 0
@@ -65,14 +65,14 @@
       "enabled": true,
       "intensity": 1,
       "rotation": 0,
-      "backgroundColor": "#23395b",
-      "keyColor": "#23395b",
-      "stripColor": "#d81e5b",
-      "fillColor": "#d81e5b",
-      "rimColor": "#59c9a5",
-      "accentColor": "#b9e3c6",
-      "bounceColor": "#b9e3c6",
-      "backColor": "#fffd98"
+      "backgroundColor": "#333333",
+      "keyColor": "#5e5e5e",
+      "stripColor": "#5e5e5e",
+      "fillColor": "#48e5c2",
+      "rimColor": "#48e5c2",
+      "accentColor": "#f3d3bd",
+      "bounceColor": "#f3d3bd",
+      "backColor": "#fcfaf9"
     },
     "occlusion": {
       "enabled": true,
@@ -266,6 +266,9 @@
     "gravity": 100,
     "friction": 0.55
   },
+  "interaction": {
+    "grabForce": 500
+  },
   "herd": {
     "count": 7,
     "jumpPower": 0.783,
@@ -378,9 +381,9 @@
     "follow": true,
     "optimizedTextures": false,
     "followSmoothing": 0.45,
-    "yaw": 163.5398762646,
-    "elevation": 11.9731113792,
-    "distance": 22.6752241685,
+    "yaw": 139.6779836261,
+    "elevation": 12.124956002,
+    "distance": 30.3446065777,
     "offsetX": 0,
     "offsetY": 0,
     "offsetZ": 0,

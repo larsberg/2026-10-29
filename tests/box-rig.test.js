@@ -7,6 +7,7 @@ import { createMeshView } from '../src/mesh-view.js';
 import { defaultMeshSetup, mergeMeshSetup } from '../src/mesh-settings.js';
 import { boxConnections } from '../src/box-rig.js';
 import { fitMeshShadows } from '../src/mesh-shadows.js';
+import { DEFAULT_GRAB_FORCE, MAX_GRAB_FORCE } from '../src/interaction-settings.js';
 
 await initCSG(); await initPhysics();
 const source = createBoxUnion(1);
@@ -254,5 +255,52 @@ test('grabbing a source box pulls its picked point through the solver and releas
     view.regenerate(undefined, setup);
     assert.equal(rig.dragging, false); assert.equal(physics.entries.length, 5); assert.equal(physics.joints.length, 4);
     assert.equal(rig.pickCollider(new Raycaster()), null);
+  } finally { dispose(); }
+});
+
+test('lowering the force of an active grab limits release speed and subsequent travel without rebuilding the rig', () => {
+  function fling(grabForce) {
+    const { physics, view, dispose } = fixture();
+    try {
+      const rig = view.rig, generation = view.generation;
+      const mass = rig.entries.reduce((sum, { body }) => sum + body.getMass(), 0);
+      const center = () => rig.entries.reduce((point, { body }) => point.addScaledVector(body.getWorldCenterOfMass(), body.getMass()), new Vector3()).divideScalar(mass);
+      const rest = center();
+      view.configure(mergeMeshSetup(setup, { interaction: { grabForce: MAX_GRAB_FORCE } }));
+      const hit = rig.pickCollider(new Raycaster(new Vector3(0, 0, 20), new Vector3(0, 0, -1)));
+      assert.equal(rig.beginDrag(hit.link, hit.point), true);
+      view.configure(mergeMeshSetup(setup, { interaction: { grabForce } }));
+      assert.equal(view.rig, rig); assert.equal(view.generation, generation);
+      rig.moveDrag(hit.point.clone().add(new Vector3(40, 20, 0)));
+      for (let i = 0; i < 12; i++) physics.step(1 / 120);
+      const releaseSpeed = rig.entries.reduce((sum, { body }) => sum + new Vector3().copy(body.getLinearVelocity()).length() * body.getMass(), 0) / mass;
+      rig.endDrag();
+      for (let i = 0; i < 120; i++) physics.step(1 / 120);
+      assert.ok(rig.positions.every(Number.isFinite));
+      return { releaseSpeed, travel: center().distanceTo(rest) };
+    } finally { dispose(); }
+  }
+  const original = fling(MAX_GRAB_FORCE), reduced = fling(DEFAULT_GRAB_FORCE);
+  assert.ok(original.releaseSpeed > 200, 'The maximum retains the original strong fling.');
+  assert.ok(reduced.releaseSpeed > 1, 'A reduced grab still allows a physical release.');
+  assert.ok(reduced.releaseSpeed < original.releaseSpeed / 2);
+  assert.ok(reduced.travel < original.travel / 2);
+});
+
+test('zero grab force releases an active grab and disables new grabs after regeneration', () => {
+  const { physics, view, dispose } = fixture();
+  try {
+    const rig = view.rig, hit = rig.pickCollider(new Raycaster(new Vector3(0, 0, 20), new Vector3(0, 0, -1)));
+    assert.equal(rig.beginDrag(hit.link, hit.point), true);
+    const disabled = mergeMeshSetup(setup, { interaction: { grabForce: 0 } });
+    view.configure(disabled);
+    assert.equal(rig.dragging, false); assert.equal(physics.entries.length, 5); assert.equal(physics.joints.length, 4);
+    assert.equal(rig.beginDrag(hit.link, hit.point), false);
+    view.regenerate(undefined, disabled);
+    const next = view.rig, nextHit = next.pickCollider(new Raycaster(new Vector3(0, 0, 20), new Vector3(0, 0, -1)));
+    assert.equal(next.beginDrag(nextHit.link, nextHit.point), false);
+    view.configure(setup);
+    assert.equal(next.beginDrag(nextHit.link, nextHit.point), true);
+    next.endDrag();
   } finally { dispose(); }
 });

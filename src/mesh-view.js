@@ -64,6 +64,7 @@ export function createMeshView(scene, sharedSurfaceMaterial, physics, projection
       projection.capture(surface.mesh, point);
     }
     rig?.setCollidersVisible(configured?.visibility.colliders);
+    rig?.setGrabForce(configured?.interaction?.grabForce);
   }
   function operate(operation) {
     if (!topology) throw new Error('No surface loaded.');
@@ -130,6 +131,7 @@ export function createMeshView(scene, sharedSurfaceMaterial, physics, projection
       updateWireframe();
       object.visible = settings.visibility.surface || settings.visibility.wireframe || settings.visibility.colliders;
       rig?.setCollidersVisible(settings.visibility.colliders);
+      rig?.setGrabForce(settings.interaction?.grabForce);
       if (surface) { surface.mesh.visible = settings.visibility.surface; surface.configure(); }
     },
     dispose() {

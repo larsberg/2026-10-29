@@ -7,6 +7,7 @@ import { Readable } from 'node:stream';
 import { createSetupHandler } from '../server/setup-api.js';
 import { defaultMeshSetup, mergeMeshSetup, validateMeshSetup } from '../src/mesh-settings.js';
 import { requestStaticSetup } from '../src/static-setup.js';
+import { DEFAULT_GRAB_FORCE, MAX_GRAB_FORCE } from '../src/interaction-settings.js';
 
 test('local Save/Reload roundtrips mesh settings and rejects invalid writes atomically', async () => {
   const directory=await mkdtemp(join(tmpdir(),'mesh-settings-')), file=join(directory,'setup.json');
@@ -22,7 +23,7 @@ test('local Save/Reload roundtrips mesh settings and rejects invalid writes atom
     const setup=mergeMeshSetup(defaultMeshSetup(),{pipeline:{seed:42,insetScale:.75,triangulateEnabled:false,faceCenterDualEnabled:false,averageVerticesEnabled:false,insetEnabled:false,excludeInitialBorderTriangles:false},rigidBody:{gravity:780.5,friction:1.25},appearance:{wireframeColor:'#aabbcc'},camera:{yaw:30},audio:{bpm:128}});
     assert.equal((await request('PUT',setup)).statusCode,200);
     assert.deepEqual((await request('GET')).body,setup);
-    const editedSetup=mergeMeshSetup(setup,{pipeline:{hexelateEnabled:false,insetScale:.25},materials:{mesh:{normalMix:.8,roughness:.6,color:'#aabbcc'}},visibility:{surface:true,wireframe:true},lines:{spacing:2.5,angle:20,seed:16384}});
+    const editedSetup=mergeMeshSetup(setup,{pipeline:{hexelateEnabled:false,insetScale:.25},materials:{mesh:{normalMix:.8,roughness:.6,color:'#aabbcc'}},visibility:{surface:true,wireframe:true},lines:{spacing:2.5,angle:20,seed:16384},interaction:{grabForce:450}});
     assert.equal((await request('PUT',editedSetup)).statusCode,200);
     assert.deepEqual((await request('GET')).body,editedSetup);
     assert.equal((await request('PUT',{...setup,pipeline:{...setup.pipeline,insetScale:0}})).statusCode,400);
@@ -74,7 +75,8 @@ test('the herd loads its bass and drum defaults and the editable bundled setup v
   assert.ok(defaults.audio.bass>0 && defaults.audio.keys>0 && defaults.audio.melody>0);
   assert.equal(bundled.rig,undefined);
   // Saved rich text is editable and may differ from the reset defaults.
-  assert.deepEqual(validateMeshSetup(bundled), { ...bundled, paletteLibrary: bundled.paletteLibrary ?? defaults.paletteLibrary });
+  assert.deepEqual(validateMeshSetup(bundled), { ...bundled, paletteLibrary: bundled.paletteLibrary ?? defaults.paletteLibrary,
+    interaction: bundled.interaction ?? defaults.interaction });
 });
 
 
@@ -129,4 +131,17 @@ test('body count migrates to seven and saves integer counts from one to eleven',
     assert.equal(validateMeshSetup(JSON.parse(JSON.stringify(saved))).herd.count, count);
   }
   for (const count of [0, 12, 2.5, NaN, '7']) assert.throws(() => mergeMeshSetup(setup, { herd: { count } }));
+});
+
+test('grab force migrates to the reduced default, saves zero and the original ceiling, and rejects invalid values', () => {
+  const setup = defaultMeshSetup(), old = structuredClone(setup); delete old.interaction;
+  assert.equal(setup.interaction.grabForce, DEFAULT_GRAB_FORCE);
+  assert.equal(validateMeshSetup(old).interaction.grabForce, DEFAULT_GRAB_FORCE);
+  for (const grabForce of [0, DEFAULT_GRAB_FORCE, MAX_GRAB_FORCE]) {
+    const saved = mergeMeshSetup(setup, { interaction: { grabForce } });
+    assert.deepEqual(validateMeshSetup(JSON.parse(JSON.stringify(saved))), saved);
+    assert.deepEqual(saved.herd, setup.herd, 'User force is independent of musical jump forces.');
+  }
+  for (const grabForce of [-1, MAX_GRAB_FORCE + 1, NaN, null, '1000'])
+    assert.throws(() => mergeMeshSetup(setup, { interaction: { grabForce } }), /Grab \/ throw force/);
 });
