@@ -21,7 +21,10 @@ test('background, clear and fog stay black while palette changes still fade the 
   for(let i=0;i<120;i++)palette.update(1/60);
   assert.equal(scene.background.getHexString(),initial);assert.equal(transitions,0);assert.deepEqual(lighting,before);
   const next=applyStudioPalette(lighting,'glacier');
-  palette.configure(next);palette.update(.25);assert.equal(transitions,1);assert.equal(palette.transitioning,true);
+  palette.configure(next);
+  assert.equal(spotlight.color.getHexString(), new Color(before.spotlight.color).getHexString());
+  palette.update(.25);assert.equal(transitions,1);assert.equal(palette.transitioning,true);
+  assert.equal(spotlight.color.getHexString(), new Color(before.spotlight.color).getHexString(), 'Palette fades leave the spotlight color fixed.');
   assert.equal(scene.background.getHexString(), '000000', 'The background does not take part in the palette fade.');
   assert.equal(clearColor.getHexString(), scene.background.getHexString());
   assert.equal(scene.fog.color.getHexString(), scene.background.getHexString());
@@ -29,7 +32,7 @@ test('background, clear and fog stay black while palette changes still fade the 
   assert.equal(scene.background.getHexString(), '000000');
   assert.equal(clearColor.getHexString(), '000000');
   assert.equal(scene.fog.color.getHexString(), '000000');
-  assert.equal(spotlight.color.getHexString(),new Color(next.spotlight.color).getHexString());
+  assert.equal(spotlight.color.getHexString(),new Color(before.spotlight.color).getHexString());
 });
 
 test('palette advances once every two four-beat bars across pause, tempo edits, skipped frames and restart', () => {

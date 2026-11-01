@@ -10,6 +10,7 @@ import { rigidBodyFields, validateRigidBody } from './rigid-body-settings.js';
 import { boxFields } from './box-settings.js';
 import { DEFAULT_JUMP_POWER, DEFAULT_SMALL_JUMP_PERCENT, DEFAULT_HERD_COUNT } from './herd-rhythm.js';
 import { projectedLineFields } from './projected-lines.js';
+import { defaultPaletteLibrary, validatePaletteLibrary } from './palette-library.js';
 
 export const meshFields = {
   lines: projectedLineFields,
@@ -99,7 +100,7 @@ export function defaultMeshSetup() {
   // Keep occlusion optional; surface lighting and studio reflections are active.
   lighting.occlusion.enabled = false;
   const result = { version: 1, sketch: '2026-10-29', materials: defaultMaterials(), lighting,
-    info: structuredClone(meshInfo),
+    info: structuredClone(meshInfo), paletteLibrary: defaultPaletteLibrary(),
     ...Object.fromEntries(Object.entries(meshFields).map(([group, fields]) => [group, Object.fromEntries(fields.map(([key, , value]) => [key, value]))])) };
   Object.assign(result.audio, herdAudioSettings());
   return result;
@@ -149,6 +150,7 @@ export function validateMeshSetup(value) {
   if (result.fog.far <= result.fog.near) throw new Error('Fog end distance must be greater than its start distance.');
   result.materials = validateMaterials(value.materials);
   result.lighting = validateLighting(value.lighting);
+  result.paletteLibrary = validatePaletteLibrary(value.paletteLibrary);
   result.info = validateInfo(value.info);
   result.audio.instruments = validateInstruments(value.audio?.instruments);
   return result;
@@ -158,6 +160,7 @@ export function mergeMeshSetup(current, patch) {
   if (patch?.version !== undefined || patch?.sketch !== undefined) return validateMeshSetup(patch);
   if(patch?.rigidBody!==undefined)validateRigidBody(patch.rigidBody);
   const next = structuredClone(current);
+  if (patch?.paletteLibrary !== undefined) next.paletteLibrary = { ...current.paletteLibrary, ...patch.paletteLibrary };
   for (const group of [...Object.keys(meshFields), 'info']) Object.assign(next[group], patch?.[group]);
   if (patch?.audio?.instruments !== undefined) next.audio.instruments = mergeInstruments(current.audio.instruments, patch.audio.instruments);
   for (const group of ['materials', 'lighting']) for (const [key, value] of Object.entries(patch?.[group] ?? {})) Object.assign(next[group][key], value);

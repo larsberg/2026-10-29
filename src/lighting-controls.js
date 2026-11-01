@@ -1,5 +1,7 @@
 import { defaultLighting, lightingGroups } from "./lighting-settings.js";
 import { applyStudioPalette, matchingStudioPalette, studioPalettes } from './studio-palettes.js';
+import { validatePaletteLibrary, libraryPalettes, nextApprovedPalette } from './palette-library.js';
+import { bindPaletteWorkshop } from './palette-workshop.js';
 
 export function lightingControlsMarkup() {
   return `<div class="field-select"><label for="studio-palette">Studio palette</label>
@@ -8,12 +10,12 @@ export function lightingControlsMarkup() {
       <select id="studio-palette"><option value="custom" disabled>Custom</option>${studioPalettes.map(p => `<option value="${p.id}">${p.label}</option>`).join('')}</select>
       <button type="button" class="palette-next" aria-label="Next palette" title="Next palette">→</button>
     </span></div>
-    <p class="camera-hint">Palettes advance to the next preset every two musical bars. They color the projected lines, reflection studio, and lights; the scene background and fog stay black. Lighting changes fade over 0.3 seconds. Edit colors below to make a custom palette; Save retains it.</p>
+    <p class="camera-hint">Approved palettes advance every two musical bars. Review and generate palettes in the Palettes tab. Colors affect the lines, reflections, and lights; the background and fog stay black. Lighting changes fade over 0.3 seconds.</p>
     ` + lightingGroups.map(({ key, label, fields }, index) => `
     <details class="material-group" ${index === 0 ? "open" : ""}>
       <summary>${label}</summary>
       ${key === "directional" ? '<p class="camera-hint">Light offsets follow the center of the boxes.</p>' : ""}
-      ${key === "spotlight" ? '<p class="camera-hint">Position and aim follow the body. Offsets stay in world space, so the light remains overhead as the mesh rolls.</p>' : ""}
+      ${key === "spotlight" ? '<p class="camera-hint">Position and aim follow the body. Offsets stay in world space, so the light remains overhead as the mesh rolls. Spotlight color stays independent of the palette.</p>' : ""}
       ${key === "hemisphere" ? '<p class="camera-hint">Tilt: 0° overhead · 90° sideways · 180° below. Yaw turns the tilted direction around the scene.</p>' : ""}
       ${key === "environment" ? '<p class="camera-hint">Seven colored studio planes make the reflected bands. Colors, rotation and environment intensity retain their own controls.</p>' : ""}
       ${key === "occlusion" ? '<p class="camera-hint">Adds contact shading between the boxes and their folds. AO only shows the shading on white. Disable for faster rendering.</p>' : ""}
@@ -27,13 +29,26 @@ export function lightingControlsMarkup() {
     </details>`).join("");
 }
 
-export function bindLightingControls(root, directional, hemisphere, materials, getMaterials, onChange, applyOcclusion, applySceneLighting = () => {}, initialLighting = defaultLighting(), spotlight) {
+export function bindLightingControls(root, directional, hemisphere, materials, getMaterials, onChange, applyOcclusion, applySceneLighting = () => {}, initialLighting = defaultLighting(), spotlight, paletteOptions = {}) {
   const inputs = Object.fromEntries(lightingGroups.map(({ key, fields }) => [key,
     Object.fromEntries(fields.map(([name]) => [name, root.querySelector(`#lighting-${key}-${name}`)])),
   ]));
   let settings = defaultLighting();
   const paletteSelect = root.querySelector('#studio-palette');
-  let paletteIndex = -1;
+  let library = validatePaletteLibrary(paletteOptions.library), palettes = libraryPalettes(library), lastPaletteId = 'custom', workshop;
+  function refreshPaletteSelect() {
+    const current = matchingStudioPalette(settings, palettes), available = palettes.filter(p => library.approved.includes(p.id));
+    paletteSelect.replaceChildren();
+    const custom = document.createElement('option'); custom.value = 'custom'; custom.disabled = true; custom.textContent = 'Custom'; paletteSelect.append(custom);
+    if (current !== 'custom' && !library.approved.includes(current)) {
+      const option = document.createElement('option'); option.value = current; option.disabled = true;
+      option.textContent = `Preview · ${palettes.find(p => p.id === current).label}`; paletteSelect.append(option);
+    }
+    for (const p of available) { const option = document.createElement('option'); option.value = p.id; option.textContent = p.label; paletteSelect.append(option); }
+    paletteSelect.value = current;
+    if (current !== 'custom') lastPaletteId = current;
+    for (const selector of ['.palette-previous', '.palette-next']) root.querySelector(selector).disabled = available.length === 0;
+  }
   const center = { x: 0, y: 0, z: 0 };
   function updatePosition(point) {
     center.x = point.x; center.y = point.y; center.z = point.z;
@@ -83,8 +98,8 @@ export function bindLightingControls(root, directional, hemisphere, materials, g
     updatePosition(center);
     refreshEnvironment();
     applyOcclusion(settings.occlusion);
-    paletteSelect.value = matchingStudioPalette(settings);
-    if (paletteSelect.value !== 'custom') paletteIndex = studioPalettes.findIndex(p => p.id === paletteSelect.value);
+    refreshPaletteSelect();
+    workshop?.syncPreview();
   }
   for (const group of Object.values(inputs))
     for (const input of Object.values(group))
@@ -92,10 +107,11 @@ export function bindLightingControls(root, directional, hemisphere, materials, g
   const controls = {
     get: () => structuredClone(settings), updatePosition, refreshEnvironment,
     advancePalette(steps = 1) {
-      const start = paletteIndex < 0 ? (steps > 0 ? -1 : 0) : paletteIndex;
-      const next = ((start + steps) % studioPalettes.length + studioPalettes.length) % studioPalettes.length;
-      choosePalette(studioPalettes[next].id);
+      const next = nextApprovedPalette(palettes, library, lastPaletteId, steps);
+      if (next) choosePalette(next.id);
     },
+    setLibrary(value) { library = validatePaletteLibrary(value); palettes = libraryPalettes(library); refreshPaletteSelect(); workshop?.render(); },
+    dispose() { workshop?.dispose(); },
     set(value) {
       for (const { key } of lightingGroups)
         for (const [name, input] of Object.entries(inputs[key])) {
@@ -105,10 +121,15 @@ export function bindLightingControls(root, directional, hemisphere, materials, g
       apply();
     },
   };
-  function choosePalette(id) { controls.set(applyStudioPalette(settings, id)); onChange(); }
+  function choosePalette(id) { controls.set(applyStudioPalette(settings, id, palettes)); onChange(); }
   paletteSelect.addEventListener('change', () => choosePalette(paletteSelect.value));
   for (const [selector, direction] of [['.palette-previous', -1], ['.palette-next', 1]])
     root.querySelector(selector).addEventListener('click', () => controls.advancePalette(direction));
   controls.set(initialLighting);
+  if (root.querySelector('#panel-palettes')) workshop = bindPaletteWorkshop(root, {
+    getLibrary: () => library, getPalettes: () => palettes, getCurrentId: () => matchingStudioPalette(settings, palettes),
+    preview: choosePalette,
+    change(value) { controls.setLibrary(value); paletteOptions.onLibraryChange?.(structuredClone(library)); onChange(); },
+  });
   return controls;
 }

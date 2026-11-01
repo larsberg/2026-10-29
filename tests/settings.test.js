@@ -74,7 +74,7 @@ test('the herd loads its bass and drum defaults and the editable bundled setup v
   assert.ok(defaults.audio.bass>0 && defaults.audio.keys>0 && defaults.audio.melody>0);
   assert.equal(bundled.rig,undefined);
   // Saved rich text is editable and may differ from the reset defaults.
-  assert.deepEqual(validateMeshSetup(bundled),bundled);
+  assert.deepEqual(validateMeshSetup(bundled), { ...bundled, paletteLibrary: bundled.paletteLibrary ?? defaults.paletteLibrary });
 });
 
 

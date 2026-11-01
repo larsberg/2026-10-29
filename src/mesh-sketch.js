@@ -94,7 +94,7 @@ export async function mountMesh(root,{ui=false}={}) {
       settings.fog.color='#000000';panel?.set(settings,'fog');
       meshMaterial.envMap=textProp.material.envMap=environment.texture;
       views.configure(settings);
-    },settings.lighting,spotlight);
+    },settings.lighting,spotlight,{library:settings.paletteLibrary,onLibraryChange:value=>{settings.paletteLibrary=value;}});
   const infoControls=bindInfoControls(shell,info=>{textProp.setInfo(info);markChanged();},message=>panel?.status(message,true));
   const followSuspended=()=>orbitDragging||colliderDrag?.active;
   function stopCameraForDrag() {
@@ -139,7 +139,7 @@ export async function mountMesh(root,{ui=false}={}) {
     configureSceneFog(scene,settings.fog);
     textProp.alignToTiles(settings.floor.tileSize,settings.infoLayout);
     textProp.mesh.visible=settings.visibility.text;
-    materialControls.set(settings.materials);lightingControls.set(settings.lighting);
+    materialControls.set(settings.materials);lightingControls.setLibrary(settings.paletteLibrary);lightingControls.set(settings.lighting);
     views.configure(settings);
     infoControls.set(settings.info);textProp.setInfo(settings.info);
     if(settings.visibility.fps&&!stats){stats=new Stats();stats.dom.className='frame-rate-meter';stats.dom.style.cssText='position:absolute;top:16px;left:16px;z-index:4;cursor:pointer;opacity:0.9';shell.append(stats.dom);}
@@ -276,7 +276,7 @@ export async function mountMesh(root,{ui=false}={}) {
     editMesh:meshAction,audio:marchAudio,setComposition(pattern){return marchAudio.setPattern(pattern);},paletteMotion,scene,
     get mesh(){return views;},get boxUnion(){return boxUnions?.[0];},get boxUnions(){return boxUnions;},ground,herdMotion,lineProjection,environment,physics,renderer,camera,controls,recording:recording.recorder,render(){physics.sync();renderScene();},
     dispose(){disposed=true;startup.dispose();renderer.setAnimationLoop(null);setupAbort.abort();colliderDrag.dispose();unbindAudio();recording.dispose();marchAudio.dispose();focus.dispose();resize.disconnect();controls.removeEventListener('start',startOrbit);controls.removeEventListener('end',endOrbit);controls.dispose();panel.dispose();infoControls.dispose();thumbnailCapture?.dispose(); effects.dispose();stats?.dom.remove();
-      herdMotion.dispose();views.dispose();ground.dispose();lineProjection.dispose();physics.dispose();meshMaterial.dispose();
+      lightingControls.dispose();herdMotion.dispose();views.dispose();ground.dispose();lineProjection.dispose();physics.dispose();meshMaterial.dispose();
       const geometries=new Set(),materials=new Set();scene.traverse(object=>{if(object.geometry)geometries.add(object.geometry);if(object.material)materials.add(object.material);});
       geometries.delete(textProp.mesh.geometry);materials.delete(textProp.material);textProp.dispose();geometries.forEach(g=>g.dispose());materials.forEach(m=>m.dispose());environment.dispose();sun.shadow.dispose();spotlight.shadow.dispose();renderer.dispose();shell.remove();if(window.__meshSketch===api)delete window.__meshSketch;
     }};

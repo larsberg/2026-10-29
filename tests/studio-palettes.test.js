@@ -27,6 +27,7 @@ test('all studio palettes preserve reflection settings and roundtrip their envir
   for(const palette of studioPalettes){
     const lighting=applyStudioPalette(original.lighting,palette.id),saved=validateMeshSetup({...original,lighting});
     assert.equal(matchingStudioPalette(saved.lighting),palette.id);assert.equal(saved.lighting.environment.rotation,35);assert.equal(saved.lighting.environment.intensity,1.7);
+    assert.deepEqual(saved.lighting.spotlight, original.lighting.spotlight, 'Every palette preserves the spotlight color and shadow settings.');
     for(const [key,color] of Object.entries(palette.environment))assert.equal(saved.lighting.environment[key],color);
   }
   assert.equal(original.lighting.environment.backgroundColor,'#000000');
@@ -37,7 +38,7 @@ test('known older presets load in brightness order while custom colors and light
   for (const preset of studioPalettes) {
     const lighting = applyStudioPalette(original.lighting, preset.id);
     Object.assign(lighting.environment, preset.legacyEnvironment, { rotation: 35, intensity: 1.7 });
-    Object.assign(lighting.spotlight, { penumbra: .7, softness: 4, intensity: 1700 });
+    Object.assign(lighting.spotlight, { color: '#e6daca', penumbra: .7, softness: 4, intensity: 1700 });
     const saved = validateMeshSetup({ ...original, lighting });
     assert.equal(matchingStudioPalette(saved.lighting), preset.id);
     assert.deepEqual(saved.lighting.spotlight, lighting.spotlight);

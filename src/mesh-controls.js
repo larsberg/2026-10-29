@@ -4,6 +4,7 @@ import { infoControlsMarkup } from './info-controls.js';
 import { meshFields } from './mesh-settings.js';
 import { instrumentControlsMarkup, bindInstrumentControls } from './instrument-controls.js';
 import { recordingControlsMarkup } from './recording-controls.js';
+import { paletteWorkshopMarkup } from './palette-workshop.js';
 
 const icon = path => `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="${path}"/></svg>`;
 const paths = {
@@ -24,7 +25,7 @@ function fieldMarkup(group, [key, label, initial, min, max, step]) {
 export function meshControlsMarkup() {
   const fields = group => meshFields[group].map(field => fieldMarkup(group, field)).join('');
   const saveLabel = import.meta.env?.PROD ? 'Save on this device' : 'Save settings';
-  const tabs = ['Mesh', 'Audio', 'Materials', 'Lighting', 'Camera', 'Info'];
+  const tabs = ['Mesh', 'Palettes', 'Audio', 'Materials', 'Lighting', 'Camera', 'Info'];
   return `
     <button class="icon-button drawer-toggle" aria-label="Open controls" title="Open controls" aria-expanded="false" aria-controls="controls-drawer">
       ${icon('m6 6 12 12M18 6 6 18')}
@@ -106,6 +107,7 @@ export function meshControlsMarkup() {
             ${lightingControlsMarkup().replaceAll('boxes', 'mesh')}
             <details class="material-group" open><summary>Fog</summary>${meshFields.fog.filter(([key]) => key !== 'color').map(field => fieldMarkup('fog', field)).join('')}<p class="camera-hint">Fades distant surfaces into the fixed black background. Start and end distances are measured from the camera.</p></details>
           </section>
+          <section id="panel-palettes" role="tabpanel" aria-labelledby="tab-palettes" hidden>${paletteWorkshopMarkup()}</section>
           <section id="panel-camera" role="tabpanel" aria-labelledby="tab-camera" hidden>
             <p class="control-heading">Camera</p><p class="camera-hint">Drag empty space to orbit; scroll or pinch to zoom. Follow uses the surface center, or the origin while the scene is empty. Offsets are relative to that center with Follow on, or world coordinates with Follow off. Your view and Follow setting are saved.</p>
             ${meshFields.camera.filter(([, , value]) => typeof value === 'boolean').map(field => fieldMarkup('camera', field)).join('')}<div class="camera-controls">${meshFields.camera.filter(([, , value]) => typeof value !== 'boolean').map(field => fieldMarkup('camera', field)).join('')}</div><button class="reset-camera">Reset camera</button>
@@ -154,6 +156,7 @@ export function bindMeshControls(shell, { ui, change, playPause, reset, resetCam
       query(`#${item.getAttribute('aria-controls')}`).hidden = !active;
     }
     query('.drawer-content').scrollTop = 0;
+    shell.dispatchEvent(new CustomEvent('control-tab-change', { detail: tab.id }));
   }
   tabs.forEach((tab, index) => {
     tab.addEventListener('click', () => selectTab(tab));

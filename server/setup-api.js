@@ -46,7 +46,7 @@ export function createSetupHandler(file, { defaults = defaultSetup, validate = v
       let size = 0;
       for await (const chunk of req) {
         size += Buffer.byteLength(chunk);
-        if (size > 65_536) {
+        if (size > 262_144) {
           send(413, { error: "Setup JSON is too large." });
           return;
         }

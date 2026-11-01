@@ -7,7 +7,7 @@ const sortColors = colors => [...colors].sort((a, b) => brightness(a) - brightne
 const defaultColors = sortColors(copperColors);
 
 // The same color roles drive the studio bake, saved settings, and color pickers.
-// Intensities, positions, material properties, floor, and fog remain independent.
+// Spotlight color, intensities, positions, material properties, floor, and fog remain independent.
 export const studioColorFields = [
   ['backgroundColor', 'Studio background'],
   ['keyColor', 'Broad front panel'],
@@ -20,7 +20,7 @@ export const studioColorFields = [
 ].map(([key, label], i) => [key, label, defaultColors[i]]);
 export const defaultStudioColors = () => Object.fromEntries(studioColorFields.map(([key, , color]) => [key, color]));
 
-function palette(id, label, colors, directional, sky, ground) {
+export function palette(id, label, colors, directional, sky, ground) {
   const sorted = sortColors(colors);
   return { id, label, environment: Object.fromEntries(studioColorFields.map(([key], i) => [key, sorted[i]])),
     legacyEnvironment: Object.fromEntries(studioColorFields.map(([key], i) => [key, colors[i]])),
@@ -56,18 +56,16 @@ export function migrateStudioColors(environment) {
   return preset ? { ...environment, ...preset } : environment;
 }
 
-export function matchingStudioPalette(lighting) {
-  return studioPalettes.find(p => studioColorKey(p.environment) === studioColorKey(lighting.environment)
+export function matchingStudioPalette(lighting, palettes = studioPalettes) {
+  return palettes.find(p => studioColorKey(p.environment) === studioColorKey(lighting.environment)
     && p.directional.color === lighting.directional.color
-    && (!lighting.spotlight || p.directional.color === lighting.spotlight.color)
     && p.hemisphere.skyColor === lighting.hemisphere.skyColor
     && p.hemisphere.groundColor === lighting.hemisphere.groundColor)?.id ?? 'custom';
 }
 
-export function applyStudioPalette(lighting, id) {
-  const preset = studioPalettes.find(p => p.id === id);
+export function applyStudioPalette(lighting, id, palettes = studioPalettes) {
+  const preset = palettes.find(p => p.id === id);
   if (!preset) throw new Error('Unknown studio palette.');
   return { ...lighting, environment: { ...lighting.environment, ...preset.environment },
-    ...(lighting.spotlight ? { spotlight: { ...lighting.spotlight, color: preset.directional.color } } : {}),
     directional: { ...lighting.directional, ...preset.directional }, hemisphere: { ...lighting.hemisphere, ...preset.hemisphere } };
 }
